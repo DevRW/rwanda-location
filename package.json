@@ -1,0 +1,15 @@
+{
+  "name": "rwanda-location",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/DevRW/rwanda-location.git",
+  "author": "Jean Jacques Munezero Nyilinkindi <jacknyilinkindi@gmail.com> and Theo Okafor <theo.okafor@yahoo.com>",
+  "license": "Apache 2.0",
+  "private": null,
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "morgan": "^1.9.1"
+  }
+}
