@@ -5,11 +5,27 @@
   "repository": "https://github.com/DevRW/rwanda-location.git",
   "author": "Jean Jacques Munezero Nyilinkindi <jacknyilinkindi@gmail.com> and Theo Okafor <theo.okafor@yahoo.com>",
   "license": "Apache 2.0",
-  "private": null,
+  "private": false,
+  "scripts": {
+    "dev": "nodemon index --exec babel-node",
+    "start": "node build/index",
+    "build": "rm -rf build && mkdir build && babel index.js --out-file build/index.js && yarn build-src",
+    "build-src": "babel src/ --out-dir build/src"
+  },
   "dependencies": {
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "morgan": "^1.9.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.3",
+    "babel-preset-es2015": "^6.24.1",
+    "eslint": "^6.6.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "nodemon": "^1.19.4"
   }
 }
