@@ -3,6 +3,9 @@ import morgan from 'morgan';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 
+import routes from './src/routes';
+import ResponseSpec from './src/helpers/response-spec';
+
 // Set up express app
 const app = express();
 
@@ -15,7 +18,13 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-const port = process.env.PORT || 8080;
+app.use('/api/v1', routes);
+
+app.use('/', (request, response) => {
+  ResponseSpec.good(response, 200, 'Welcome to Rwanda Location API');
+});
+
+const port = process.env.PORT || 2500;
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console
