@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://github.com/DevRW/rwanda-location.git",
-  "author": "Jean Jacques Munezero Nyilinkindi <jacknyilinkindi@gmail.com> and Theo Okafor <theo.okafor@yahoo.com>",
+  "author": "Jacques Nyilinkindi <info@jnkindilogs.xyz> and Theo Okafor <theo.okafor@yahoo.com>",
   "license": "Apache 2.0",
   "private": false,
   "scripts": {
@@ -34,6 +34,6 @@
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.18.2",
     "mocha": "^6.2.2",
-    "nodemon": "^1.19.4"
+    "nodemon": "^2.0.4"
   }
 }
