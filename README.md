@@ -679,7 +679,12 @@ npm run lint
 
 ## Changelog
 
-### 1.1.0 (Latest)
+### 1.1.1 (Latest)
+
+- 📄 License: Changed from Apache-2.0 to MIT license for better compatibility
+- 📦 Package: Updated package metadata
+
+### 1.1.0
 
 - 🔒 Security: Fixed all vulnerabilities (0 vulnerabilities)
 - ✅ Testing: Enhanced test coverage to 98%+
@@ -704,7 +709,7 @@ Need help? We're here for you:
 
 ## License
 
-Apache-2.0 License - see the [LICENSE](LICENSE) file for details.
+MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Authors
 

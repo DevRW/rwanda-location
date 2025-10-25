@@ -1,6 +1,6 @@
 {
   "name": "@devrw/rwanda-location",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A comprehensive TypeScript library for querying Rwanda's administrative divisions (provinces, districts, sectors, cells, and villages)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
     "rwanda-data"
   ],
   "author": "Jacques Nyilinkindi <info@jnkindilogs.xyz> and Theo Okafor <theo.okafor@yahoo.com>",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "private": false,
   "files": [
     "dist",
