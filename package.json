@@ -1,39 +1,60 @@
 {
-  "name": "rwanda-location",
-  "version": "1.0.0",
-  "main": "index.js",
-  "repository": "https://github.com/DevRW/rwanda-location.git",
-  "author": "Jacques Nyilinkindi <info@jnkindilogs.xyz> and Theo Okafor <theo.okafor@yahoo.com>",
-  "license": "Apache 2.0",
-  "private": false,
-  "scripts": {
-    "dev": "nodemon index --exec babel-node",
-    "start": "node build/index",
-    "build": "rm -rf build && mkdir build && babel index.js --out-file build/index.js && yarn build-src",
-    "build-src": "babel src/ --out-dir build/src",
-    "test": "mocha --require @babel/register src/test/test.js --timeout 100000 --exit"
+  "name": "@devrw/rwanda-location",
+  "version": "1.1.0",
+  "description": "A comprehensive TypeScript library for querying Rwanda's administrative divisions (provinces, districts, sectors, cells, and villages)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevRW/rwanda-location.git"
   },
-  "dependencies": {
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "morgan": "^1.9.1"
+  "keywords": [
+    "rwanda",
+    "location",
+    "provinces",
+    "districts",
+    "sectors",
+    "cells",
+    "villages",
+    "administrative-divisions",
+    "geography",
+    "rwanda-data"
+  ],
+  "author": "Jacques Nyilinkindi <info@jnkindilogs.xyz> and Theo Okafor <theo.okafor@yahoo.com>",
+  "license": "Apache-2.0",
+  "private": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "prepublishOnly": "npm run build && npm test",
+    "prepare": "npm run build",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix"
   },
   "devDependencies": {
-    "@babel/cli": "^7.6.4",
-    "@babel/core": "^7.6.4",
-    "@babel/node": "^7.6.3",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/polyfill": "^7.6.0",
-    "@babel/preset-env": "^7.6.3",
-    "@babel/register": "^7.6.2",
-    "babel-eslint": "^10.0.3",
-    "chai": "^4.2.0",
-    "chai-http": "^4.3.0",
-    "eslint": "^6.6.0",
-    "eslint-config-airbnb-base": "^14.0.0",
-    "eslint-plugin-import": "^2.18.2",
-    "mocha": "^6.2.2",
-    "nodemon": "^2.0.4"
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.18.12",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.2"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
   }
 }

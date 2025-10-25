@@ -1,0 +1,64 @@
+# Source files
+src/
+tsconfig.json
+jest.config.js
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/
+coverage/
+
+# Development files
+.eslintrc.json
+.prettierrc
+.babelrc
+.eslintrc
+
+# Documentation (keep only README and CHANGELOG)
+CONTRIBUTING.md
+DEVELOPER_SUMMARY.md
+PUBLISHING.md
+API.md
+HIERARCHICAL_NAVIGATION.md
+SECURITY.md
+SECURITY_AUDIT_REPORT.md
+SECURITY_IMPROVEMENTS_SUMMARY.md
+
+# Examples
+examples/
+
+# Build artifacts
+build/
+*.log
+
+# Git
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+*.local
+
+# Misc
+node_modules/
+*.tgz
+.DS_Store
+index.js
+yarn.lock
+package-lock.json
+.npmrc
+
+# Security
+*.pem
+*.key
+*.cert

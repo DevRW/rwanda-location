@@ -83,3 +83,13 @@ npm-debug.log*
 
 # Cyress examples
 cypress/integration/examples
+
+# TypeScript build output
+dist/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
