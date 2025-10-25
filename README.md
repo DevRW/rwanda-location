@@ -3,7 +3,7 @@
 A simple, powerful TypeScript library for working with Rwanda's administrative divisions. Get information about provinces, districts, sectors, cells, and villages with ease!
 
 [![npm version](https://img.shields.io/npm/v/@devrw/rwanda-location.svg)](https://www.npmjs.com/package/@devrw/rwanda-location)
-[![License](https://img.shields.io/npm/l/@devrw/rwanda-location.svg)](https://github.com/DevRW/rwanda-location/blob/develop/LICENSE)
+[![License](https://img.shields.io/npm/l/@devrw/rwanda-location.svg)](https://github.com/DevRW/rwanda-location/blob/main/LICENSE)
 [![Security](https://img.shields.io/badge/security-0%20vulnerabilities-brightgreen)](https://www.npmjs.com/package/@devrw/rwanda-location)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](./package.json)
 
@@ -679,7 +679,12 @@ npm run lint
 
 ## Changelog
 
-### 1.1.1 (Latest)
+### 1.1.2 (Latest)
+
+- 📄 License: Updated Read me to capture license change
+- 📦 Package: Updated package metadata
+
+### 1.1.1
 
 - 📄 License: Changed from Apache-2.0 to MIT license for better compatibility
 - 📦 Package: Updated package metadata

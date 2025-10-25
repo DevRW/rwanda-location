@@ -1,6 +1,6 @@
 {
   "name": "@devrw/rwanda-location",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A comprehensive TypeScript library for querying Rwanda's administrative divisions (provinces, districts, sectors, cells, and villages)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
