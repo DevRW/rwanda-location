@@ -28,21 +28,30 @@ console.log(`Found ${districts.length} districts\n`);
 const selectedDistrict = districts[0];
 console.log(`STEP 3: Selected District: ${selectedDistrict.name} (code: ${selectedDistrict.code})`);
 const sectors = rw.getSectors(selectedDistrict.code);
-console.log(`Sectors in ${selectedDistrict.name}:`, sectors.map(s => s.name));
+console.log(
+  `Sectors in ${selectedDistrict.name}:`,
+  sectors.map((s) => s.name)
+);
 console.log(`Found ${sectors.length} sectors\n`);
 
 // STEP 4: Select a sector and get its cells
 const selectedSector = sectors[0];
 console.log(`STEP 4: Selected Sector: ${selectedSector.name} (code: ${selectedSector.code})`);
 const cells = rw.getCells(selectedSector.code);
-console.log(`Cells in ${selectedSector.name}:`, cells.map(c => c.name));
+console.log(
+  `Cells in ${selectedSector.name}:`,
+  cells.map((c) => c.name)
+);
 console.log(`Found ${cells.length} cells\n`);
 
 // STEP 5: Select a cell and get its villages
 const selectedCell = cells[0];
 console.log(`STEP 5: Selected Cell: ${selectedCell.name} (code: ${selectedCell.code})`);
 const villages = rw.getVillages(selectedCell.code);
-console.log(`Villages in ${selectedCell.name}:`, villages.map(v => v.name));
+console.log(
+  `Villages in ${selectedCell.name}:`,
+  villages.map((v) => v.name)
+);
 console.log(`Found ${villages.length} villages\n`);
 
 // STEP 6: Select a village and get FULL HIERARCHICAL INFO
@@ -69,4 +78,6 @@ console.log('Same result:', hierarchy);
 
 // BONUS: Demonstrate the navigation path
 console.log('\n=== NAVIGATION PATH ===');
-console.log(`${selectedProvince.name} → ${selectedDistrict.name} → ${selectedSector.name} → ${selectedCell.name} → ${selectedVillage.name}`);
+console.log(
+  `${selectedProvince.name} → ${selectedDistrict.name} → ${selectedSector.name} → ${selectedCell.name} → ${selectedVillage.name}`
+);

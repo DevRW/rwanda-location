@@ -139,9 +139,7 @@ class AddressForm {
     options: Array<{ code: number | string; name: string }>
   ): void {
     console.log(`\n[UI] Rendering ${level} dropdown with ${options.length} options`);
-    console.log(
-      `[UI] Options: ${options.map((opt) => `${opt.name} (${opt.code})`).join(', ')}`
-    );
+    console.log(`[UI] Options: ${options.map((opt) => `${opt.name} (${opt.code})`).join(', ')}`);
   }
 
   /**
