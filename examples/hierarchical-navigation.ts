@@ -3,9 +3,11 @@
  *
  * This example demonstrates the PRIMARY use case:
  * Province → District → Sector → Cell → Village → Full Info
+ *
+ * Run it in a project where @devrw/rwanda-location is installed.
  */
 
-import { RwandaLocation } from '../src';
+import { RwandaLocation } from '@devrw/rwanda-location';
 
 const rw = new RwandaLocation();
 

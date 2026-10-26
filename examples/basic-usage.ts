@@ -1,45 +1,41 @@
-import { RwandaLocation, rwandaLocation } from 'rwanda-location';
+/**
+ * Basic usage
+ *
+ * The shared instance, lookups by code and name, a search, a query and the statistics.
+ * Run it in a project where @devrw/rwanda-location is installed.
+ */
 
-// Example 1: Using the default instance
-console.log('=== Example 1: Get All Provinces ===');
-const provinces = rwandaLocation.getProvinces();
-console.log(provinces);
+import { RwandaLocation, formatLocation, rwandaLocation } from '@devrw/rwanda-location';
 
-// Example 2: Get districts in Kigali
-console.log('\n=== Example 2: Get Districts in Kigali ===');
-const kigaliDistricts = rwandaLocation.getDistricts(1);
-console.log(kigaliDistricts);
+// 1. The provinces, from the shared instance
+console.log('=== Provinces ===');
+console.log(rwandaLocation.getProvinces());
 
-// Example 3: Search for locations
-console.log('\n=== Example 3: Search for "Gitega" ===');
-const searchResults = rwandaLocation.search({ query: 'Gitega', limit: 5 });
-searchResults.forEach((location) => {
-  console.log(
-    `${location.village_name}, ${location.cell_name}, ${location.sector_name}, ${location.district_name}`
-  );
-});
+// 2. The districts of Kigali (province code 1)
+console.log('\n=== Districts in Kigali ===');
+console.log(rwandaLocation.getDistricts(1));
 
-// Example 4: Get complete hierarchy for a village
-console.log('\n=== Example 4: Get Village Hierarchy ===');
-const villages = rwandaLocation.getVillages();
-if (villages.length > 0) {
-  const firstVillage = villages[0];
-  const hierarchy = rwandaLocation.getHierarchy(firstVillage.code);
-  console.log('Complete hierarchy:', hierarchy);
+// 3. Search: the first rows where a province, district, sector, cell or village name contains
+// "Gitega". Each row is one village.
+console.log('\n=== First 5 rows matching "Gitega" ===');
+for (const row of rwandaLocation.search({ query: 'Gitega', limit: 5 })) {
+  console.log(formatLocation(row));
 }
 
-// Example 5: Query with filters
-console.log('\n=== Example 5: Query Locations in Kigali Province ===');
-const kigaliLocations = rwandaLocation.query({ provinceCode: 1 });
-console.log(`Found ${kigaliLocations.length} locations in Kigali`);
+// 4. One village with its cell, sector, district and province
+console.log('\n=== Village 101010102 ===');
+console.log(rwandaLocation.getHierarchy(101010102));
 
-// Example 6: Get statistics
-console.log('\n=== Example 6: Get Statistics ===');
-const stats = rwandaLocation.getStatistics();
-console.log(stats);
+// 5. Query with a filter: the village rows of Kigali province
+console.log('\n=== Villages in Kigali province ===');
+const kigaliRows = rwandaLocation.query({ provinceCode: 1 });
+console.log(`Found ${kigaliRows.length} villages in Kigali`);
 
-// Example 7: Using a new instance
-console.log('\n=== Example 7: Using Custom Instance ===');
-const customInstance = new RwandaLocation();
-const province = customInstance.getProvinceByName('SOUTH');
-console.log(province);
+// 6. The number of divisions at each level
+console.log('\n=== Statistics ===');
+console.log(rwandaLocation.getStatistics());
+
+// 7. Your own instance. It shares the data and the lookup tables with rwandaLocation.
+console.log('\n=== Province named "south" ===');
+const rw = new RwandaLocation();
+console.log(rw.getProvinceByName('south'));

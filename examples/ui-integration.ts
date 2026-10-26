@@ -2,10 +2,12 @@
  * UI Integration Example
  *
  * This example shows how to integrate the library into a web form
- * with cascading dropdowns/selects for address input
+ * with cascading dropdowns/selects for address input.
+ *
+ * Run it in a project where @devrw/rwanda-location is installed.
  */
 
-import { RwandaLocation } from '../src';
+import { Cell, District, Province, RwandaLocation, Sector, Village } from '@devrw/rwanda-location';
 
 // Simulated UI state (in a real app, this would be React/Vue/Angular state)
 interface AddressFormState {
@@ -34,17 +36,18 @@ class AddressForm {
   /**
    * Initialize form - load provinces for the first dropdown
    */
-  initializeForm(): void {
+  initializeForm(): Province[] {
     const provinces = this.rw.getProvinces();
     console.log('=== STEP 1: Load Provinces ===');
     console.log('Available provinces for dropdown:', provinces);
     this.renderDropdown('Province', provinces);
+    return provinces;
   }
 
   /**
    * User selected a province - load districts
    */
-  onProvinceSelected(provinceCode: number): void {
+  onProvinceSelected(provinceCode: number): District[] {
     this.state.selectedProvinceCode = provinceCode;
 
     // Reset downstream selections
@@ -58,12 +61,13 @@ class AddressForm {
     console.log(`\n=== STEP 2: Province ${provinceCode} selected ===`);
     console.log('Available districts for dropdown:', districts);
     this.renderDropdown('District', districts);
+    return districts;
   }
 
   /**
    * User selected a district - load sectors
    */
-  onDistrictSelected(districtCode: number): void {
+  onDistrictSelected(districtCode: number): Sector[] {
     this.state.selectedDistrictCode = districtCode;
 
     // Reset downstream selections
@@ -76,12 +80,13 @@ class AddressForm {
     console.log(`\n=== STEP 3: District ${districtCode} selected ===`);
     console.log('Available sectors for dropdown:', sectors);
     this.renderDropdown('Sector', sectors);
+    return sectors;
   }
 
   /**
    * User selected a sector - load cells
    */
-  onSectorSelected(sectorCode: string): void {
+  onSectorSelected(sectorCode: string): Cell[] {
     this.state.selectedSectorCode = sectorCode;
 
     // Reset downstream selections
@@ -93,12 +98,13 @@ class AddressForm {
     console.log(`\n=== STEP 4: Sector ${sectorCode} selected ===`);
     console.log('Available cells for dropdown:', cells);
     this.renderDropdown('Cell', cells);
+    return cells;
   }
 
   /**
    * User selected a cell - load villages
    */
-  onCellSelected(cellCode: number): void {
+  onCellSelected(cellCode: number): Village[] {
     this.state.selectedCellCode = cellCode;
 
     // Reset downstream selection
@@ -109,6 +115,7 @@ class AddressForm {
     console.log(`\n=== STEP 5: Cell ${cellCode} selected ===`);
     console.log('Available villages for dropdown:', villages);
     this.renderDropdown('Village', villages);
+    return villages;
   }
 
   /**
@@ -145,7 +152,7 @@ class AddressForm {
   /**
    * Display the complete selected address
    */
-  private displayCompleteAddress(village: any): void {
+  private displayCompleteAddress(village: Village | null): void {
     if (!village) return;
 
     console.log('\n╔════════════════════════════════════════╗');
@@ -183,45 +190,15 @@ console.log('╚═════════════════════�
 
 const form = new AddressForm();
 
-// Initialize the form
-form.initializeForm();
+// Each step picks the first option of the dropdown the previous step rendered:
+// KIGALI → Nyarugenge → Gitega → Akabahizi → Gihanga
+const provinces = form.initializeForm();
+const districts = form.onProvinceSelected(provinces[0].code);
+const sectors = form.onDistrictSelected(districts[0].code);
+const cells = form.onSectorSelected(sectors[0].code);
+const villages = form.onCellSelected(cells[0].code);
+form.onVillageSelected(villages[0].code);
 
-// Simulate user selections (Province → District → Sector → Cell → Village)
-setTimeout(() => {
-  form.onProvinceSelected(1); // Select KIGALI
-}, 500);
-
-setTimeout(() => {
-  form.onDistrictSelected(101); // Select first district in Kigali
-}, 1000);
-
-setTimeout(() => {
-  const rw = new RwandaLocation();
-  const sectors = rw.getSectors(101);
-  if (sectors.length > 0) {
-    form.onSectorSelected(sectors[0].code); // Select first sector
-  }
-}, 1500);
-
-setTimeout(() => {
-  const rw = new RwandaLocation();
-  const sectors = rw.getSectors(101);
-  const cells = rw.getCells(sectors[0].code);
-  if (cells.length > 0) {
-    form.onCellSelected(cells[0].code); // Select first cell
-  }
-}, 2000);
-
-setTimeout(() => {
-  const rw = new RwandaLocation();
-  const sectors = rw.getSectors(101);
-  const cells = rw.getCells(sectors[0].code);
-  const villages = rw.getVillages(cells[0].code);
-  if (villages.length > 0) {
-    form.onVillageSelected(villages[0].code); // Select first village
-  }
-
-  // Check if form is complete
-  console.log('\n[VALIDATION] Form complete:', form.isFormComplete());
-  console.log('[STATE] Final form state:', form.getFormState());
-}, 2500);
+// Check if form is complete
+console.log('\n[VALIDATION] Form complete:', form.isFormComplete());
+console.log('[STATE] Final form state:', form.getFormState());
