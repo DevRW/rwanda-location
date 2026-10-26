@@ -328,8 +328,9 @@ export class RwandaLocation {
    * - Codes and ids are not searched: `search({ query: '101' })` returns `[]`.
    * - `limit` keeps the first `limit` matches. `0`, `NaN`, `null`, `undefined` and negative
    *   numbers mean no limit. Other values are passed to `Array#slice(0, limit)`, so `2.5` keeps
-   *   2, `0.5` keeps none and `'5'` keeps 5. Since 1.2.0 a negative limit means no limit; before,
-   *   it dropped matches from the end.
+   *   2, `0.5` keeps none and `'5'` keeps 5. Since 1.2.0 a negative limit means no limit. 1.1.2
+   *   passed it to `slice()`, so `-1` dropped the last match and a limit between -1 and 0
+   *   returned none.
    *
    * @param options - `{ query, caseSensitive?, limit? }`. Unless `caseSensitive` is truthy,
    *   `query` must be a string: `search()`, `search({})` and `search({ query: 1 })` throw a
@@ -355,7 +356,7 @@ export class RwandaLocation {
         : scanSearch(this.data, searchTerm, caseSensitive);
 
     // Since 1.2.0 a negative limit means no limit, like 0. (1.1.2 passed it to slice(), which
-    // dropped results from the end.)
+    // dropped results from the end, or returned none for a limit between -1 and 0.)
     return limit && !(limit < 0) ? results.slice(0, limit) : results;
   }
 

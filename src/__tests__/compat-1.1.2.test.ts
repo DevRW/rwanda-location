@@ -856,4 +856,63 @@ describe('1.1.2 compatibility on other data arrays (injected through `data`)', (
     rows.pop();
     compareAll().verify(8);
   });
+
+  it('sees the data array reordered in place after the tables are built', () => {
+    const rows = everyNth(7);
+    const oldRw = withData(new oracle.RwandaLocation(), rows);
+    const newRw = withData(new RwandaLocation(), rows);
+    const district = rows[0].district_code;
+    const compareAll = (): Differ => {
+      const d = new Differ(asApi(oldRw), asApi(newRw), rowIndexes(rows));
+      d.same('getProvinceByName', 'kigali');
+      d.same('getProvinceByName', 'east');
+      d.same('getDistricts', 1);
+      d.same('getVillages', undefined, undefined, district);
+      d.same('query', { districtCode: district });
+      d.same('query', { districtName: rows[0].district_name });
+      d.same('query', { villageName: rows[3].village_name, provinceCode: rows[3].province_code });
+      d.same('search', { query: 'ki' });
+      d.same('search', { query: 'ga', limit: 5 });
+      d.same('getStatistics');
+      return d;
+    };
+
+    compareAll().verify(10); // builds the tables
+    rows.reverse();
+    compareAll().verify(10);
+    rows.sort((a, b) => a.village_name.localeCompare(b.village_name));
+    compareAll().verify(10);
+    rows.splice(0, 1, clone(real[2]));
+    compareAll().verify(10);
+    rows[rows.length - 1] = clone(real[3]);
+    compareAll().verify(10);
+  });
+
+  it('never returns non-matching rows after an undetected reorder', () => {
+    const rows = everyNth(7);
+    const rw = withData(new RwandaLocation(), rows);
+    rw.search({ query: 'a' }); // builds the tables
+    rw.getProvinceByName('kigali');
+    // Swap two rows that are not the first, middle or last one, so the tables are kept.
+    const [i, j] = [1, rows.length - 2];
+    [rows[i], rows[j]] = [rows[j], rows[i]];
+
+    const term = rows[i].village_name.toLowerCase();
+    const found = rw.search({ query: term });
+    expect(found.length).toBeGreaterThan(0);
+    for (const row of found) {
+      const names = [
+        row.province_name,
+        row.district_name,
+        row.sector_name,
+        row.cell_name,
+        row.village_name,
+      ];
+      expect(names.some((name) => name.toLowerCase().includes(term))).toBe(true);
+    }
+    for (const row of rw.query({ districtName: rows[j].district_name })) {
+      expect(row.district_name).toBe(rows[j].district_name);
+    }
+    expect(rw.getProvinceByName(rows[i].province_name)?.name).toBe(rows[i].province_name);
+  });
 });

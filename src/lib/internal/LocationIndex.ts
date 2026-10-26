@@ -6,25 +6,31 @@
  * make sure it does:
  *  - Tables are built lazily, one at a time, on first use. They are cached per data array in a
  *    WeakMap, so every instance that uses the bundled dataset shares them, construction does no
- *    work, and instances get no new properties. If rows are added or removed, the tables are
- *    rebuilt.
- *  - Tables hold references to the data rows, never copies, and are never changed after they
- *    are built. Every call returns new arrays. The one piece of reused scratch memory, the
- *    search() memo, is lent to one call at a time (see NameTable.spareMemo).
+ *    work, and instances get no new properties.
+ *  - Every table is built from one copy of the row list, taken when the index is created, so all
+ *    tables agree on which rows exist and in what order. The rows themselves are shared, never
+ *    copied. If rows are added, removed or reordered (see {@link indexFor}), a new index is made.
+ *  - Tables are never changed after they are built. Every call returns new arrays. The one piece
+ *    of reused scratch memory, the search() memo, is lent to one call at a time (see
+ *    NameTable.spareMemo).
  *  - The row used for a code is the first row in data order that has it ("first row wins"),
  *    which is the row 1.1.2's find() and Map picked.
  *  - Lists are sorted with 1.1.2's comparators: numeric, and String#localeCompare for sector
- *    codes. Codes in a list are distinct, so an in-order subset of the sorted list equals the
- *    sorted subset.
+ *    codes. Array#sort is stable and both implementations sort codes in order of first
+ *    appearance, so an in-order subset of the sorted list equals the sorted subset, ties included.
  *  - Filters keep 1.1.2's truthiness gate (0, NaN, '', null, undefined and false mean "no
  *    filter") and compare with ===. Map lookups use SameValueZero, which differs from === only
  *    for NaN, so NaN never reaches a lookup.
- *  - A level is answered from its tables only when its data is regular: every code has the
+ *  - A level is answered from its tables only when its codes are regular: every code has the
  *    expected type and, for filtered lists, every row of a code has the same ancestor codes.
- *    Otherwise the 1.1.2 algorithm runs, so results stay identical for a replaced data array.
+ *    Otherwise the 1.1.2 algorithm runs on the live array, so results stay identical for a data
+ *    array with irregular codes. Name fields are assumed to be strings and the array to have no
+ *    holes, as in the bundled dataset.
  *
- * Not tracked: editing the code or name fields of shared rows in place after a table is built.
- * 1.1.2 would see such edits on its next scan. The rows are documented as read-only.
+ * Not tracked: editing the code or name fields of shared rows in place, and reorders or
+ * replacements that the first, middle and last rows do not reveal. Lookups then answer from the
+ * rows as they were when the index was created. 1.1.2 rescanned on every call. The rows and the
+ * array are documented as read-only.
  */
 import { LocationData, QueryFilter } from '../../types';
 
@@ -81,7 +87,7 @@ interface LevelTables {
   first: Map<Code, LocationData>;
   /**
    * Every code has the level's type (a number that is not NaN; a string for sectors), so
-   * 1.1.2's comparator is a strict total order that cannot throw.
+   * 1.1.2's comparator is consistent and cannot throw.
    */
   typed: boolean;
   /** Every row of a code has the same ancestor codes as that code's first row. */
@@ -100,9 +106,9 @@ interface NameTable {
   raw: string[];
   /** `raw[i].toLowerCase()`. */
   lower: string[];
-  /** Index of the first row named `raw[i]`. Increasing, because of the order of `raw`. */
+  /** Index in `rows` of the first row named `raw[i]`. Increasing, because of the order of `raw`. */
   first: number[];
-  /** `rowName[r]` is the index in `raw` of row r's name. */
+  /** `rowName[r]` is the index in `raw` of the name of `rows[r]`. */
   rowName: Int32Array;
   /**
    * A cleared search() memo, waiting for the next call. A call takes it and puts it back
@@ -124,13 +130,14 @@ interface SearchField {
 
 /** Lookup tables for one data array. Get it with {@link indexFor}. */
 export class LocationIndex {
-  /** Row count when the tables were started. A different count means rows were added or removed. */
-  readonly length: number;
+  /** The rows, in order, when the index was created. Every table is built from this list. */
+  readonly rows: readonly LocationData[];
   private readonly levels: Partial<Record<CodeKey, LevelTables>> = {};
   private readonly names: Partial<Record<NameKey, NameTable>> = {};
 
+  /** @param data - The live array. Only the 1.1.2 fallbacks and `query({})` read it directly. */
   constructor(private readonly data: LocationData[]) {
-    this.length = data.length;
+    this.rows = data.slice();
   }
 
   /** The first row whose `key` field is `=== code`, or null: 1.1.2's `find()`. */
@@ -143,7 +150,7 @@ export class LocationIndex {
   firstNamed(key: NameKey, lowerName: unknown): LocationData | null {
     const names = this.nameTable(key);
     const i = names.lower.indexOf(lowerName as string);
-    return i < 0 ? null : this.data[names.first[i]];
+    return i < 0 ? null : this.rows[names.first[i]];
   }
 
   /** The number of distinct codes at a level: the length of 1.1.2's unfiltered list. */
@@ -222,7 +229,7 @@ export class LocationIndex {
       return field.memo[id] === 2;
     };
 
-    const data = this.data;
+    const data = this.rows;
     const results: LocationData[] = [];
     for (let r = 0; r < data.length && results.length < maxResults; r++) {
       if (
@@ -242,7 +249,7 @@ export class LocationIndex {
   private level(key: CodeKey): LevelTables {
     let level = this.levels[key];
     if (!level) {
-      const data = this.data;
+      const data = this.rows;
       const first = new Map<Code, LocationData>();
       let typed = true;
       for (let i = 0; i < data.length; i++) {
@@ -261,7 +268,7 @@ export class LocationIndex {
     const level = this.level(key);
     if (level.consistent === undefined) {
       const ancestors = ANCESTORS[key];
-      level.consistent = this.data.every((row) => {
+      level.consistent = this.rows.every((row) => {
         const first = level.first.get(row[key]) as LocationData;
         return first === row || ancestors.every((ancestor) => row[ancestor] === first[ancestor]);
       });
@@ -288,12 +295,12 @@ export class LocationIndex {
   /** Every row whose `key` field is `=== code` (a truthy code), in data order. */
   private rowsWithCode(key: CodeKey, code: unknown): readonly LocationData[] {
     const level = this.level(key);
-    if (level.first.size === this.data.length) {
+    if (level.first.size === this.rows.length) {
       // Every row has its own code (true for villages), so the first-row map holds them all.
       const row = level.first.get(code as Code);
       return row ? [row] : EMPTY;
     }
-    if (!level.rows) level.rows = groupBy(this.data, key);
+    if (!level.rows) level.rows = groupBy(this.rows, key);
     return level.rows.get(code as Code) || EMPTY;
   }
 
@@ -309,7 +316,7 @@ export class LocationIndex {
       return { rowName: table.rowName, hit };
     });
 
-    const data = this.data;
+    const data = this.rows;
     const results: LocationData[] = [];
     for (let r = 0; r < data.length; r++) {
       let ok = true;
@@ -322,7 +329,7 @@ export class LocationIndex {
   private nameTable(key: NameKey): NameTable {
     let table = this.names[key];
     if (!table) {
-      const data = this.data;
+      const data = this.rows;
       const ids = new Map<string, number>();
       const raw: string[] = [];
       const lower: string[] = [];
@@ -349,15 +356,27 @@ export class LocationIndex {
 
 const indexes = new WeakMap<LocationData[], LocationIndex>();
 
-/** The lookup tables for `data`, shared by every caller that passes the same array. */
+/**
+ * The lookup tables for `data`, shared by every caller that passes the same array. A new index is
+ * made when rows were added or removed, or when the first, middle or last row is no longer the
+ * same object, which is what sort(), reverse() and most splices do. That check costs three
+ * comparisons per call; a full check would cost a scan of every row.
+ */
 export function indexFor(data: LocationData[]): LocationIndex {
   let index = indexes.get(data);
-  // A cheap guard against rows being added or removed. In-place edits are not tracked.
-  if (!index || index.length !== data.length) {
+  if (!index || moved(index.rows, data)) {
     index = new LocationIndex(data);
     indexes.set(data, index);
   }
   return index;
+}
+
+function moved(rows: readonly LocationData[], data: LocationData[]): boolean {
+  const last = rows.length - 1;
+  if (rows.length !== data.length) return true;
+  if (last < 0) return false;
+  const middle = last >> 1;
+  return rows[0] !== data[0] || rows[middle] !== data[middle] || rows[last] !== data[last];
 }
 
 /** The [field, value] pairs of the truthy filters: falsy values mean "no filter" in 1.1.2. */
