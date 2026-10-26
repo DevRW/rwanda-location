@@ -87,7 +87,9 @@ function main() {
     'bundledDependencies',
   ];
   for (const field of fields.concat(depFields)) {
-    assert.strictEqual(pkg[field], undefined, `package.json has "${field}"`);
+    // npm 6 writes `"bundleDependencies": false` into every package.json it installs.
+    const value = pkg[field];
+    assert.ok(value === undefined || value === false, `package.json has "${field}"`);
   }
 
   // Export surface: key order, property kinds and the default export.
