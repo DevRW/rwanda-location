@@ -26,6 +26,10 @@ on:
         required: false
         type: string
   workflow_call:
+    outputs:
+      tarball-sha256:
+        description: sha256 of the tarball uploaded as the package-tarball artifact
+        value: ${{ jobs.package.outputs.sha256 }}
 
 permissions:
   contents: read
@@ -81,6 +85,8 @@ jobs:
     name: Package
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      sha256: ${{ steps.pack.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -101,8 +107,19 @@ jobs:
           mkdir -p pkg
           npm pack --ignore-scripts --pack-destination pkg
           tarball="$(ls pkg/*.tgz)"
+          node scripts/check-pack.cjs "$tarball"
+          sha256="$(sha256sum "$tarball" | cut -d' ' -f1)"
           echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
-          sha256sum "$tarball"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          echo "$sha256  $tarball"
+      # Uploaded before any third-party tool runs, so nothing later in this job can change it.
+      # release.yml checks the sha256 above before publishing.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-tarball
+          path: pkg/*.tgz
+          if-no-files-found: error
+          retention-days: 14
       - name: publint
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
@@ -116,12 +133,6 @@ jobs:
         # `import pkg from '@devrw/rwanda-location'` returns for existing users. 1.1.2 has the same
         # finding. Every other rule stays on.
         run: npx --yes @arethetypeswrong/cli@0.18.5 "$TARBALL" --ignore-rules cjs-only-exports-default
-      - uses: actions/upload-artifact@v7
-        with:
-          name: package-tarball
-          path: pkg/*.tgz
-          if-no-files-found: error
-          retention-days: 14
 
   runtime:
     name: Runtime (Node ${{ matrix.node }})
@@ -131,7 +142,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [14, 16, 18, 20, 22, 24]
+        node: [14, 16, 18, 20, 22, 24, 26]
     steps:
       - uses: actions/checkout@v7
         with:

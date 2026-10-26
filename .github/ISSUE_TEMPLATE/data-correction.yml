@@ -1,7 +1,7 @@
 name: Location data correction
 description: Report a wrong or missing name or code for a province, district, sector, cell or village.
 title: '[Data] '
-labels: [data]
+labels: [bug]
 body:
   - type: markdown
     attributes:

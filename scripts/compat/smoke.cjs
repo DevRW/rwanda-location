@@ -67,6 +67,28 @@ function main() {
   assert.strictEqual(pkg.module, undefined, 'a "module" entry changes what bundlers load');
   assert.deepStrictEqual(Object.keys(pkg.dependencies || {}), [], 'no runtime dependencies');
   assert.strictEqual(pkg.engines && pkg.engines.node, '>=14.0.0');
+  // Install hooks and platform fields would change what `npm install` does for every user.
+  const hooks = [
+    'preinstall',
+    'install',
+    'postinstall',
+    'preuninstall',
+    'uninstall',
+    'postuninstall',
+  ];
+  for (const hook of hooks) {
+    assert.strictEqual((pkg.scripts || {})[hook], undefined, `package.json has a "${hook}" script`);
+  }
+  const fields = ['os', 'cpu', 'libc', 'gypfile', 'bin', 'imports'];
+  const depFields = [
+    'peerDependencies',
+    'optionalDependencies',
+    'bundleDependencies',
+    'bundledDependencies',
+  ];
+  for (const field of fields.concat(depFields)) {
+    assert.strictEqual(pkg[field], undefined, `package.json has "${field}"`);
+  }
 
   // Export surface: key order, property kinds and the default export.
   const m = req(spec);

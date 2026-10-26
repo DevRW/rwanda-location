@@ -79,16 +79,21 @@ function installBaseline() {
   const version = lib.baselineVersion();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rwanda-location-api-'));
   fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"api-baseline","private":true}\n');
-  lib.npm(
-    [
-      'install',
-      '--ignore-scripts',
-      '--no-audit',
-      '--no-fund',
-      `${lib.BASELINE_ALIAS}@npm:${lib.PACKAGE_NAME}@${version}`,
-    ],
-    { cwd: dir }
-  );
+  try {
+    lib.npm(
+      [
+        'install',
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+        `${lib.BASELINE_ALIAS}@npm:${lib.PACKAGE_NAME}@${version}`,
+      ],
+      { cwd: dir }
+    );
+  } catch (err) {
+    if (fs.rmSync) fs.rmSync(dir, { recursive: true, force: true });
+    throw err;
+  }
   return { dir, pkgDir: path.join(dir, 'node_modules', lib.BASELINE_ALIAS) };
 }
 

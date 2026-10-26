@@ -111,6 +111,7 @@ jobs:
       - name: Tarball matches the release
         env:
           REPOSITORY: ${{ github.repository }}
+          EXPECTED_SHA256: ${{ needs.ci.outputs.tarball-sha256 }}
         run: |
           tarball="pkg/devrw-rwanda-location-$VERSION.tgz"
           if [ ! -f "$tarball" ]; then
@@ -118,16 +119,26 @@ jobs:
             echo "::error::$tarball is missing from the CI artifact."
             exit 1
           fi
+          if [ -z "$EXPECTED_SHA256" ]; then
+            echo "::error::CI did not report the sha256 of the tarball it built."
+            exit 1
+          fi
+          if ! echo "$EXPECTED_SHA256  $tarball" | sha256sum -c -; then
+            echo "::error::$tarball is not the tarball the Package job built."
+            exit 1
+          fi
           tar -xzOf "$tarball" package/package.json > manifest.json
           node -e '
             const m = require("./manifest.json");
             const url = (m.repository && m.repository.url) || "";
-            const repo = "github.com/" + process.env.REPOSITORY;
+            const normalized = url.replace(/^git\+/, "").replace(/\.git$/, "");
             const problems = [];
             if (m.name !== "@devrw/rwanda-location") problems.push("name is " + m.name);
             if (m.version !== process.env.VERSION) problems.push("version is " + m.version);
             // Provenance needs repository.url to match, case-sensitively, the publishing repo.
-            if (!url.includes(repo)) problems.push("repository.url is " + url);
+            if (normalized !== "https://github.com/" + process.env.REPOSITORY) {
+              problems.push("repository.url is " + url);
+            }
             for (const p of problems) console.log("::error::tarball package.json: " + p);
             process.exit(problems.length ? 1 : 0);
           '
@@ -148,4 +159,12 @@ jobs:
             exit 1
           fi
       - name: Publish
-        run: npm publish "pkg/devrw-rwanda-location-$VERSION.tgz" --access public --tag "$DIST_TAG"
+        # --tag is passed only for prereleases. Without it npm refuses to make a version lower
+        # than the current latest (a 1.1.x fix after 1.2.0) the new latest. --provenance makes a
+        # failed attestation stop the publish instead of publishing without one.
+        run: |
+          set -- "pkg/devrw-rwanda-location-$VERSION.tgz" --access public --provenance
+          if [ "$DIST_TAG" != latest ]; then
+            set -- "$@" --tag "$DIST_TAG"
+          fi
+          npm publish "$@"

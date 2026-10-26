@@ -2,7 +2,8 @@
 // installed side by side:
 //   node_modules/@devrw/rwanda-location  the candidate (from the tarball)
 //   node_modules/baseline                 @devrw/rwanda-location@$BASELINE from the registry
-// Lifecycle scripts are skipped, as they are for users installing from the registry.
+// Lifecycle scripts are skipped so the candidate and the baseline install the same way. Registry
+// installs do run install hooks; smoke.cjs asserts that the candidate has none.
 //
 // Usage: node scripts/compat/setup-consumer.cjs <candidate.tgz> <consumer-dir>
 'use strict';
