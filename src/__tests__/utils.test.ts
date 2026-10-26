@@ -134,4 +134,16 @@ describe('Utils', () => {
       expect(getChildLevel('village')).toBeNull();
     });
   });
+
+  describe('unknown levels', () => {
+    type Level = Parameters<typeof getParentLevel>[0];
+    const unknown = ['foo', 'Village', '', '__proto__', 'constructor', 'toString', 'valueOf'];
+
+    it('return undefined, including inherited object keys such as __proto__', () => {
+      for (const level of unknown) {
+        expect(getParentLevel(level as Level)).toBeUndefined();
+        expect(getChildLevel(level as Level)).toBeUndefined();
+      }
+    });
+  });
 });

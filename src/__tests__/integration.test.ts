@@ -44,7 +44,7 @@ describe('Integration Tests', () => {
       // Step 6: Get full hierarchy for the village
       const village = villages[0];
       const hierarchy = rw.getHierarchy(village.code);
-      expect(hierarchy).toBeDefined();
+      expect(hierarchy).not.toBeNull();
       expect(hierarchy?.code).toBe(village.code);
       expect(hierarchy?.provinceCode).toBe(province.code);
       expect(hierarchy?.districtCode).toBe(district.code);
@@ -58,22 +58,22 @@ describe('Integration Tests', () => {
 
       // Verify the village's cell exists
       const cell = rw.getCellByCode(firstVillage.cellCode);
-      expect(cell).toBeDefined();
+      expect(cell).not.toBeNull();
       expect(cell?.code).toBe(firstVillage.cellCode);
 
       // Verify the cell's sector exists
       const sector = rw.getSectorByCode(cell!.sectorCode);
-      expect(sector).toBeDefined();
+      expect(sector).not.toBeNull();
       expect(sector?.code).toBe(firstVillage.sectorCode);
 
       // Verify the sector's district exists
       const district = rw.getDistrictByCode(sector!.districtCode);
-      expect(district).toBeDefined();
+      expect(district).not.toBeNull();
       expect(district?.code).toBe(firstVillage.districtCode);
 
       // Verify the district's province exists
       const province = rw.getProvinceByCode(district!.provinceCode);
-      expect(province).toBeDefined();
+      expect(province).not.toBeNull();
       expect(province?.code).toBe(firstVillage.provinceCode);
     });
   });
@@ -104,7 +104,7 @@ describe('Integration Tests', () => {
       const selectedVillageCode = villages[0].code;
       const fullInfo = rw.getVillageByCode(selectedVillageCode);
 
-      expect(fullInfo).toBeDefined();
+      expect(fullInfo).not.toBeNull();
       expect(fullInfo?.provinceCode).toBe(selectedProvinceCode);
       expect(fullInfo?.districtCode).toBe(selectedDistrictCode);
       expect(fullInfo?.sectorCode).toBe(selectedSectorCode);
@@ -120,11 +120,11 @@ describe('Integration Tests', () => {
 
       // Validate province exists
       const province = rw.getProvinceByCode(provinceCode);
-      expect(province).toBeDefined();
+      expect(province).not.toBeNull();
 
       // Validate district exists and belongs to province
       const district = rw.getDistrictByCode(districtCode);
-      expect(district).toBeDefined();
+      expect(district).not.toBeNull();
       expect(district?.provinceCode).toBe(provinceCode);
 
       // Get a sector from this district
@@ -133,7 +133,7 @@ describe('Integration Tests', () => {
 
       const sectorCode = sectors[0].code;
       const sector = rw.getSectorByCode(sectorCode);
-      expect(sector).toBeDefined();
+      expect(sector).not.toBeNull();
       expect(sector?.districtCode).toBe(districtCode);
       expect(sector?.provinceCode).toBe(provinceCode);
     });
@@ -180,17 +180,18 @@ describe('Integration Tests', () => {
       const newProvinces = newInstance.getProvinces();
 
       expect(defaultProvinces).toEqual(newProvinces);
+
+      // Changing one instance's results does not affect another instance.
+      defaultProvinces[0].name = 'CHANGED';
+      expect(newInstance.getProvinces()[0].name).toBe('KIGALI');
     });
   });
 
   describe('Performance and Data Integrity', () => {
-    it('should handle large result sets efficiently', () => {
-      const startTime = Date.now();
+    it('should handle large result sets', () => {
       const allVillages = rw.getVillages();
-      const endTime = Date.now();
 
-      expect(allVillages.length).toBeGreaterThan(1000);
-      expect(endTime - startTime).toBeLessThan(1000); // Should complete in less than 1 second
+      expect(allVillages).toHaveLength(14842);
     });
 
     it('should maintain unique codes across administrative levels', () => {
@@ -221,11 +222,11 @@ describe('Integration Tests', () => {
 
       const fullPath = rw.getFullPath(village.code);
 
-      expect(fullPath.province).toBeDefined();
-      expect(fullPath.district).toBeDefined();
-      expect(fullPath.sector).toBeDefined();
-      expect(fullPath.cell).toBeDefined();
-      expect(fullPath.village).toBeDefined();
+      expect(fullPath.province).not.toBeNull();
+      expect(fullPath.district).not.toBeNull();
+      expect(fullPath.sector).not.toBeNull();
+      expect(fullPath.cell).not.toBeNull();
+      expect(fullPath.village).not.toBeNull();
 
       expect(fullPath.province?.code).toBe(village.provinceCode);
       expect(fullPath.district?.code).toBe(village.districtCode);

@@ -25,7 +25,7 @@ describe('RwandaLocation', () => {
     it('should include KIGALI province', () => {
       const provinces = rwandaLocation.getProvinces();
       const kigali = provinces.find((p) => p.name === 'KIGALI');
-      expect(kigali).toBeDefined();
+      expect(kigali).not.toBeUndefined();
       expect(kigali?.code).toBe(1);
     });
   });
@@ -33,7 +33,7 @@ describe('RwandaLocation', () => {
   describe('getProvinceByCode', () => {
     it('should return a province by valid code', () => {
       const province = rwandaLocation.getProvinceByCode(1);
-      expect(province).toBeDefined();
+      expect(province).not.toBeNull();
       expect(province?.name).toBe('KIGALI');
     });
 
@@ -46,13 +46,13 @@ describe('RwandaLocation', () => {
   describe('getProvinceByName', () => {
     it('should return a province by name', () => {
       const province = rwandaLocation.getProvinceByName('KIGALI');
-      expect(province).toBeDefined();
+      expect(province).not.toBeNull();
       expect(province?.code).toBe(1);
     });
 
     it('should be case-insensitive', () => {
       const province = rwandaLocation.getProvinceByName('kigali');
-      expect(province).toBeDefined();
+      expect(province).not.toBeNull();
       expect(province?.name).toBe('KIGALI');
     });
 
@@ -74,6 +74,7 @@ describe('RwandaLocation', () => {
 
     it('should filter districts by province code', () => {
       const kigaliDistricts = rwandaLocation.getDistricts(1);
+      expect(kigaliDistricts).toHaveLength(3);
       expect(kigaliDistricts.every((d) => d.provinceCode === 1)).toBe(true);
       expect(kigaliDistricts.every((d) => d.provinceName === 'KIGALI')).toBe(true);
     });
@@ -89,8 +90,8 @@ describe('RwandaLocation', () => {
   describe('getDistrictByCode', () => {
     it('should return a district by valid code', () => {
       const district = rwandaLocation.getDistrictByCode(101);
-      expect(district).toBeDefined();
-      expect(district?.name).toBeDefined();
+      expect(district).not.toBeNull();
+      expect(district?.name).toBe('Nyarugenge');
       expect(district?.provinceCode).toBe(1);
     });
 
@@ -111,11 +112,13 @@ describe('RwandaLocation', () => {
       const districts = rwandaLocation.getDistricts();
       const firstDistrict = districts[0];
       const sectors = rwandaLocation.getSectors(firstDistrict.code);
+      expect(sectors.length).toBeGreaterThan(0);
       expect(sectors.every((s) => s.districtCode === firstDistrict.code)).toBe(true);
     });
 
     it('should filter sectors by province code', () => {
       const sectors = rwandaLocation.getSectors(undefined, 1);
+      expect(sectors).toHaveLength(35);
       expect(sectors.every((s) => s.provinceCode === 1)).toBe(true);
     });
   });
@@ -125,7 +128,7 @@ describe('RwandaLocation', () => {
       const sectors = rwandaLocation.getSectors();
       const firstSector = sectors[0];
       const sector = rwandaLocation.getSectorByCode(firstSector.code);
-      expect(sector).toBeDefined();
+      expect(sector).not.toBeNull();
       expect(sector?.code).toBe(firstSector.code);
     });
 
@@ -146,6 +149,7 @@ describe('RwandaLocation', () => {
       const sectors = rwandaLocation.getSectors();
       const firstSector = sectors[0];
       const cells = rwandaLocation.getCells(firstSector.code);
+      expect(cells.length).toBeGreaterThan(0);
       expect(cells.every((c) => c.sectorCode === firstSector.code)).toBe(true);
     });
 
@@ -153,6 +157,7 @@ describe('RwandaLocation', () => {
       const districts = rwandaLocation.getDistricts();
       const firstDistrict = districts[0];
       const cells = rwandaLocation.getCells(undefined, firstDistrict.code);
+      expect(cells.length).toBeGreaterThan(0);
       expect(cells.every((c) => c.districtCode === firstDistrict.code)).toBe(true);
     });
   });
@@ -162,7 +167,7 @@ describe('RwandaLocation', () => {
       const cells = rwandaLocation.getCells();
       const firstCell = cells[0];
       const cell = rwandaLocation.getCellByCode(firstCell.code);
-      expect(cell).toBeDefined();
+      expect(cell).not.toBeNull();
       expect(cell?.code).toBe(firstCell.code);
     });
 
@@ -183,6 +188,7 @@ describe('RwandaLocation', () => {
       const cells = rwandaLocation.getCells();
       const firstCell = cells[0];
       const villages = rwandaLocation.getVillages(firstCell.code);
+      expect(villages.length).toBeGreaterThan(0);
       expect(villages.every((v) => v.cellCode === firstCell.code)).toBe(true);
     });
 
@@ -190,6 +196,7 @@ describe('RwandaLocation', () => {
       const sectors = rwandaLocation.getSectors();
       const firstSector = sectors[0];
       const villages = rwandaLocation.getVillages(undefined, firstSector.code);
+      expect(villages.length).toBeGreaterThan(0);
       expect(villages.every((v) => v.sectorCode === firstSector.code)).toBe(true);
     });
   });
@@ -199,7 +206,7 @@ describe('RwandaLocation', () => {
       const villages = rwandaLocation.getVillages();
       const firstVillage = villages[0];
       const village = rwandaLocation.getVillageByCode(firstVillage.code);
-      expect(village).toBeDefined();
+      expect(village).not.toBeNull();
       expect(village?.code).toBe(firstVillage.code);
     });
 
@@ -212,11 +219,13 @@ describe('RwandaLocation', () => {
   describe('query', () => {
     it('should filter by province code', () => {
       const results = rwandaLocation.query({ provinceCode: 1 });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.province_code === 1)).toBe(true);
     });
 
     it('should filter by province name', () => {
       const results = rwandaLocation.query({ provinceName: 'KIGALI' });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.province_name === 'KIGALI')).toBe(true);
     });
 
@@ -224,6 +233,7 @@ describe('RwandaLocation', () => {
       const districts = rwandaLocation.getDistricts();
       const firstDistrict = districts[0];
       const results = rwandaLocation.query({ districtName: firstDistrict.name });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.district_name === firstDistrict.name)).toBe(true);
     });
 
@@ -256,11 +266,13 @@ describe('RwandaLocation', () => {
         provinceCode: 1,
         districtCode: 101,
       });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.province_code === 1 && r.district_code === 101)).toBe(true);
     });
 
     it('should be case-insensitive for names', () => {
       const results = rwandaLocation.query({ provinceName: 'kigali' });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.province_name === 'KIGALI')).toBe(true);
     });
 
@@ -302,12 +314,13 @@ describe('RwandaLocation', () => {
 
     it('should respect case sensitivity option', () => {
       const results = rwandaLocation.search({ query: 'KIGALI', caseSensitive: true });
+      expect(results.length).toBeGreaterThan(0);
       expect(results.every((r) => r.province_name === 'KIGALI')).toBe(true);
     });
 
     it('should limit results when limit is specified', () => {
       const results = rwandaLocation.search({ query: 'a', limit: 10 });
-      expect(results.length).toBeLessThanOrEqual(10);
+      expect(results).toHaveLength(10);
     });
 
     it('should be case-insensitive by default', () => {
@@ -322,12 +335,12 @@ describe('RwandaLocation', () => {
       const firstVillage = villages[0];
       const hierarchy = rwandaLocation.getHierarchy(firstVillage.code);
 
-      expect(hierarchy).toBeDefined();
+      expect(hierarchy).not.toBeNull();
       expect(hierarchy?.code).toBe(firstVillage.code);
-      expect(hierarchy?.cellCode).toBeDefined();
-      expect(hierarchy?.sectorCode).toBeDefined();
-      expect(hierarchy?.districtCode).toBeDefined();
-      expect(hierarchy?.provinceCode).toBeDefined();
+      expect(hierarchy?.cellCode).toBe(firstVillage.cellCode);
+      expect(hierarchy?.sectorCode).toBe(firstVillage.sectorCode);
+      expect(hierarchy?.districtCode).toBe(firstVillage.districtCode);
+      expect(hierarchy?.provinceCode).toBe(firstVillage.provinceCode);
     });
 
     it('should return null for invalid village code', () => {
@@ -363,11 +376,11 @@ describe('RwandaLocation', () => {
       const firstVillage = villages[0];
       const path = rwandaLocation.getFullPath(firstVillage.code);
 
-      expect(path.province).toBeDefined();
-      expect(path.district).toBeDefined();
-      expect(path.sector).toBeDefined();
-      expect(path.cell).toBeDefined();
-      expect(path.village).toBeDefined();
+      expect(path.province).not.toBeNull();
+      expect(path.district).not.toBeNull();
+      expect(path.sector).not.toBeNull();
+      expect(path.cell).not.toBeNull();
+      expect(path.village).not.toBeNull();
 
       expect(path.province?.code).toBe(firstVillage.provinceCode);
       expect(path.district?.code).toBe(firstVillage.districtCode);
