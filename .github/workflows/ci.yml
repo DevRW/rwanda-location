@@ -1,0 +1,197 @@
+# Continuous integration.
+#
+#   quality  formatting, lint and type checks with the development toolchain
+#   test     the Jest suite on each Node version the development toolchain supports
+#   package  builds and packs the tarball once, checks its exact file list, compares its public
+#            types with the published baseline, runs publint and Are the Types Wrong, and uploads it
+#   runtime  installs that tarball next to the published baseline on every Node version the
+#            package supports (engines: node >= 14) and runs the smoke and differential tests
+#   types    type-checks consumer code against the tarball with several TypeScript versions
+#   result   one status that is green only when every job above passed
+#
+# release.yml runs this workflow through workflow_call and publishes the tarball built here.
+# The baseline version is set in scripts/compat/lib.cjs (DEFAULT_BASELINE); a manual run can
+# override it.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Published version to compare against (default in scripts/compat/lib.cjs)
+        required: false
+        type: string
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # A newer push supersedes an older run, but the gates of a release are never cancelled.
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
+env:
+  BASELINE: ${{ inputs.baseline }}
+
+jobs:
+  quality:
+    name: Format, lint, typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          # No dependency cache when building a release.
+          cache: ${{ github.event_name != 'release' && 'npm' || '' }}
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The development toolchain (ESLint 10, Jest 30) needs Node ^20.19 || ^22.13 || >=24.
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: ${{ github.event_name != 'release' && 'npm' || '' }}
+      - run: npm ci
+      - run: npm test
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: ${{ github.event_name != 'release' && 'npm' || '' }}
+      - run: npm ci
+      - run: npm run build
+      - name: Packed file list is exactly the expected one
+        run: npm run check:pack
+      - name: Public types match the published baseline
+        run: npm run check:api
+      - name: Pack
+        id: pack
+        run: |
+          mkdir -p pkg
+          npm pack --ignore-scripts --pack-destination pkg
+          tarball="$(ls pkg/*.tgz)"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          sha256sum "$tarball"
+      - name: publint
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: npx --yes publint@0.3.25 "$TARBALL"
+      - name: Are the Types Wrong
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        # cjs-only-exports-default is ignored because it cannot be fixed in 1.x: the package is
+        # CommonJS with exports.default = RwandaLocation, so Node ESM and bundlers in ESM mode see
+        # module.exports as the default import. Changing that, or adding an ESM entry, changes what
+        # `import pkg from '@devrw/rwanda-location'` returns for existing users. 1.1.2 has the same
+        # finding. Every other rule stays on.
+        run: npx --yes @arethetypeswrong/cli@0.18.5 "$TARBALL" --ignore-rules cjs-only-exports-default
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-tarball
+          path: pkg/*.tgz
+          if-no-files-found: error
+          retention-days: 14
+
+  runtime:
+    name: Runtime (Node ${{ matrix.node }})
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [14, 16, 18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # No npm ci here: the consumer project installs only the tarball and the baseline.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-tarball
+          path: pkg
+      - name: Install the tarball next to the published baseline
+        run: node scripts/compat/setup-consumer.cjs pkg/*.tgz "$RUNNER_TEMP/consumer"
+      - name: Smoke test (CommonJS)
+        run: node scripts/compat/smoke.cjs "$RUNNER_TEMP/consumer"
+      - name: Smoke test (Node ESM)
+        run: node scripts/compat/smoke.mjs "$RUNNER_TEMP/consumer"
+      - name: Differential test against the baseline
+        run: node scripts/compat/differential.cjs "$RUNNER_TEMP/consumer"
+
+  types:
+    name: Types (TypeScript ${{ matrix.typescript }})
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 4.7 is the first release with node16/nodenext, 5.0 the first with bundler; 7.0 has no
+        # node10 mode. scripts/compat/types/check.cjs runs every mode each version supports.
+        typescript: ['4.7', '5.0', '5.9', '6.0', '7.0']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-tarball
+          path: pkg
+      - name: Type-check consumers against the tarball
+        env:
+          TYPESCRIPT: ${{ matrix.typescript }}
+        run: node scripts/compat/types/check.cjs pkg/*.tgz "$TYPESCRIPT" "$RUNNER_TEMP/types"
+
+  result:
+    name: CI result
+    if: always()
+    needs: [quality, test, package, runtime, types]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done

@@ -1,0 +1,4 @@
+{
+  "$comment": "Intentional changes to public type declarations, checked by scripts/check-api.cjs. Key: the .d.ts path inside the package. Value: the sha256 of its comment-free text, which check-api prints, and the reason for the change.",
+  "files": {}
+}

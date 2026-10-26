@@ -1,0 +1,79 @@
+name: Location data correction
+description: Report a wrong or missing name or code for a province, district, sector, cell or village.
+title: '[Data] '
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Names and codes change only when an official source supports the change, so please
+        include one. One issue per correction (or per group of related corrections) is easiest
+        to review.
+  - type: dropdown
+    id: level
+    attributes:
+      label: Level
+      options:
+        - Province
+        - District
+        - Sector
+        - Cell
+        - Village
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What is wrong?
+      options:
+        - The name is misspelled or wrong
+        - The code is wrong
+        - It is listed under the wrong parent
+        - It is missing
+        - It should not be listed (merged, renamed or abolished)
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: codes
+    attributes:
+      label: Code(s) affected
+      description: For example village 101010102 or sector "010101". For a missing entry, give the code of its parent.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What the package returns today
+      description: Paste the call and its output, for example `rwandaLocation.getVillageByCode(101010102)`.
+      render: json
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should be
+      description: The correct name, code or parent. For a missing entry, give its full path (province, district, sector, cell, village) and code if it has one.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Official source
+      description: A link to, or an exact reference for, an official document that supports the correction, for example a notice in the Official Gazette or a publication of NISR, MINALOC or the district. Include its date and the page or section.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 1.1.2
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and this correction has not been reported yet.
+          required: true

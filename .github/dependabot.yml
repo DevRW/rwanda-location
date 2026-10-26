@@ -1,0 +1,30 @@
+# Version updates. The published package has no runtime dependencies, so npm updates only touch
+# the development toolchain, and CI checks that the package it builds is unchanged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One pull request for every minor and patch update of the development dependencies.
+      # Major updates are left out of the group, so each one gets its own pull request.
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # typescript-eslint's peer range is < 6.1.0, and TypeScript 7 has no JS API for ts-jest or
+      # typescript-eslint.
+      - dependency-name: typescript
+        versions: ['>=6.1.0']
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(ci)
