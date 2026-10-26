@@ -1,0 +1,170 @@
+# Publishes @devrw/rwanda-location to npm when a GitHub release is published.
+#
+# One-time setup on npmjs.com (no npm token is stored in GitHub):
+#   1. Open the package settings of @devrw/rwanda-location, find "Trusted publisher" and pick
+#      GitHub Actions. Fill in: organization DevRW, repository rwanda-location, workflow
+#      filename release.yml. The fields are case-sensitive. The environment name is optional;
+#      if you fill it in, it must be npm, the environment of the publish job below.
+#   2. Under allowed actions, tick "npm publish". Configurations created after 2026-09-03
+#      otherwise allow only `npm stage publish`.
+#   3. Publish once within 2 days, or npm expires the new configuration.
+#   4. Then set Settings > Publishing access to "Require two-factor authentication and disallow
+#      tokens". Trusted publishing keeps working; long-lived tokens stop working.
+#
+# Cutting a release: set "version" in package.json (and the CHANGELOG) on main, then publish a
+# GitHub release whose tag is v<version>, for example v1.2.0, on that commit. A version with a
+# prerelease suffix (1.3.0-beta.1) is published under the dist-tag "next" instead of "latest".
+#
+# The workflow checks that the tag matches package.json and that the version is not on npm yet,
+# runs every CI gate (ci.yml), and publishes the exact tarball that CI built and tested.
+# Publishing a tarball runs no lifecycle scripts. With trusted publishing from this public
+# repository, npm attaches a provenance attestation automatically.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Check tag and version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      dist-tag: ${{ steps.check.outputs.dist-tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Tag is v<package.json version>, and that version is not on npm yet
+        id: check
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::The release tag is $TAG but package.json has version $version. Tag the release v$version."
+            exit 1
+          fi
+          if out="$(npm view "$name@$version" version 2>&1)"; then
+            if [ -n "$out" ]; then
+              echo "::error::$name@$version is already published on npm. Bump the version in package.json."
+              exit 1
+            fi
+          elif ! printf '%s\n' "$out" | grep -q E404; then
+            printf '%s\n' "$out"
+            echo "::error::Could not check whether $name@$version is on npm."
+            exit 1
+          fi
+          case "$version" in
+            *-*) dist_tag=next ;;
+            *) dist_tag=latest ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dist-tag=$dist_tag" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: CI
+    needs: version
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish to npm
+    needs: [version, ci]
+    # Trusted publishing works only on GitHub-hosted runners.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # OIDC token for npm trusted publishing
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      DIST_TAG: ${{ needs.version.outputs.dist-tag }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Download the tarball that CI built and tested
+        uses: actions/download-artifact@v8
+        with:
+          name: package-tarball
+          path: pkg
+      - name: Tarball matches the release
+        env:
+          REPOSITORY: ${{ github.repository }}
+          EXPECTED_SHA256: ${{ needs.ci.outputs.tarball-sha256 }}
+        run: |
+          tarball="pkg/devrw-rwanda-location-$VERSION.tgz"
+          if [ ! -f "$tarball" ]; then
+            ls -l pkg
+            echo "::error::$tarball is missing from the CI artifact."
+            exit 1
+          fi
+          if [ -z "$EXPECTED_SHA256" ]; then
+            echo "::error::CI did not report the sha256 of the tarball it built."
+            exit 1
+          fi
+          if ! echo "$EXPECTED_SHA256  $tarball" | sha256sum -c -; then
+            echo "::error::$tarball is not the tarball the Package job built."
+            exit 1
+          fi
+          tar -xzOf "$tarball" package/package.json > manifest.json
+          node -e '
+            const m = require("./manifest.json");
+            const url = (m.repository && m.repository.url) || "";
+            const normalized = url.replace(/^git\+/, "").replace(/\.git$/, "");
+            const problems = [];
+            if (m.name !== "@devrw/rwanda-location") problems.push("name is " + m.name);
+            if (m.version !== process.env.VERSION) problems.push("version is " + m.version);
+            // Provenance needs repository.url to match, case-sensitively, the publishing repo.
+            if (normalized !== "https://github.com/" + process.env.REPOSITORY) {
+              problems.push("repository.url is " + url);
+            }
+            for (const p of problems) console.log("::error::tarball package.json: " + p);
+            process.exit(problems.length ? 1 : 0);
+          '
+          sha256sum "$tarball" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Use npm 11.5.1 or later (required for trusted publishing)
+        run: |
+          if ! node -e '
+            const [a, b, c] = process.argv[1].split(".").map(Number);
+            process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1);
+          ' "$(npm --version)"; then
+            npm install -g npm@^11.5.1
+          fi
+          npm --version
+      - name: Version is still not on npm
+        run: |
+          if out="$(npm view "@devrw/rwanda-location@$VERSION" version 2>&1)" && [ -n "$out" ]; then
+            echo "::error::@devrw/rwanda-location@$VERSION was published while this workflow ran."
+            exit 1
+          fi
+      - name: Publish
+        # --tag is passed only for prereleases. Without it npm refuses to make a version lower
+        # than the current latest (a 1.1.x fix after 1.2.0) the new latest. --provenance makes a
+        # failed attestation stop the publish instead of publishing without one.
+        run: |
+          set -- "pkg/devrw-rwanda-location-$VERSION.tgz" --access public --provenance
+          if [ "$DIST_TAG" != latest ]; then
+            set -- "$@" --tag "$DIST_TAG"
+          fi
+          npm publish "$@"

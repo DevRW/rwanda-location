@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"],
+    "paths": {
+      "@devrw/rwanda-location": ["./src/index.ts"]
+    }
+  },
+  "include": ["examples/**/*.ts"],
+  "exclude": []
+}

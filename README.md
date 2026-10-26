@@ -1,31 +1,35 @@
-# Rwanda Location 🇷🇼
+# Rwanda Location
 
-A simple, powerful TypeScript library for working with Rwanda's administrative divisions. Get information about provinces, districts, sectors, cells, and villages with ease!
+Look up Rwanda's administrative divisions (provinces, districts, sectors, cells and villages) by
+code or by name. The data ships with the package, so lookups need no network access and no
+database.
 
 [![npm version](https://img.shields.io/npm/v/@devrw/rwanda-location.svg)](https://www.npmjs.com/package/@devrw/rwanda-location)
+[![CI](https://github.com/DevRW/rwanda-location/actions/workflows/ci.yml/badge.svg)](https://github.com/DevRW/rwanda-location/actions/workflows/ci.yml)
 [![License](https://img.shields.io/npm/l/@devrw/rwanda-location.svg)](https://github.com/DevRW/rwanda-location/blob/main/LICENSE)
-[![Security](https://img.shields.io/badge/security-0%20vulnerabilities-brightgreen)](https://www.npmjs.com/package/@devrw/rwanda-location)
-[![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](./package.json)
 
-## Why Use This Library?
+- 5 provinces, 30 districts, 416 sectors, 2,148 cells and 14,842 villages, with their codes. See
+  [Data](#data).
+- Lists filtered by parent, lookups by code or name, the full path of a village, and name search.
+- TypeScript types included.
+- Zero runtime dependencies. Runs on Node.js 14 and later.
 
-Perfect for building:
+## Contents
 
-- 📝 Address forms with cascading dropdowns
-- 🗺️ Location-based applications
-- 📊 Geographic data analysis
-- 🏢 Administrative management systems
-- 📱 Mobile apps needing Rwanda location data
-
-## Features
-
-- ✅ **Complete Data** - All 5 provinces, 30 districts, 416 sectors, 2,148 cells, and 14,837 villages
-- ✅ **Easy to Use** - Simple, intuitive API
-- ✅ **Zero Dependencies** - Lightweight and fast
-- ✅ **Type-Safe** - Full TypeScript support
-- ✅ **Well Tested** - 98%+ test coverage (109 tests)
-- ✅ **Secure** - Zero vulnerabilities, security audited
-- ✅ **Production Ready** - Used in real-world applications
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Importing](#importing)
+- [Examples](#examples)
+- [API reference](#api-reference)
+- [Utility functions](#utility-functions)
+- [Exports and types](#exports-and-types)
+- [Behavior notes](#behavior-notes)
+- [Data](#data)
+- [Performance](#performance)
+- [Package size](#package-size)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Installation
 
@@ -33,18 +37,17 @@ Perfect for building:
 npm install @devrw/rwanda-location
 ```
 
-or with yarn:
+or
 
 ```bash
 yarn add @devrw/rwanda-location
 ```
 
-## Quick Start
+## Quick start
 
-```typescript
+```ts
 import { rwandaLocation } from '@devrw/rwanda-location';
 
-// Get all provinces
 const provinces = rwandaLocation.getProvinces();
 console.log(provinces);
 // [
@@ -55,9 +58,8 @@ console.log(provinces);
 //   { code: 5, name: 'EAST' }
 // ]
 
-// Get districts in a province
-const kigaliDistricts = rwandaLocation.getDistricts(1);
-console.log(kigaliDistricts);
+const districts = rwandaLocation.getDistricts(1);
+console.log(districts);
 // [
 //   { code: 101, name: 'Nyarugenge', provinceCode: 1, provinceName: 'KIGALI' },
 //   { code: 102, name: 'Gasabo', provinceCode: 1, provinceName: 'KIGALI' },
@@ -65,45 +67,76 @@ console.log(kigaliDistricts);
 // ]
 ```
 
-## Common Use Cases
+`rwandaLocation` is a ready-made instance of the `RwandaLocation` class. You can also create your
+own with `new RwandaLocation()`. Creating an instance is cheap: all instances share the same data
+and the same lookup tables.
 
-### 1. Building a Cascading Address Form
+## Importing
 
-This is the most common use case - building address forms where each dropdown depends on the previous selection:
+The package is CommonJS and includes TypeScript declarations.
 
-```typescript
+CommonJS:
+
+```js
+const { RwandaLocation, rwandaLocation } = require('@devrw/rwanda-location');
+```
+
+TypeScript and bundlers:
+
+```ts
+import { RwandaLocation, rwandaLocation, Village } from '@devrw/rwanda-location';
+```
+
+Node.js ES modules (`.mjs` files, or a package with `"type": "module"`):
+
+```js
+import { RwandaLocation, rwandaLocation } from '@devrw/rwanda-location';
+```
+
+Use named imports in Node.js ES modules. There, the default import
+(`import pkg from '@devrw/rwanda-location'`) is the whole module object, not the class:
+`pkg.rwandaLocation` works, but `new pkg()` throws a `TypeError`. In TypeScript compiled to
+CommonJS, the default import is the `RwandaLocation` class. Named imports behave the same
+everywhere.
+
+Only the package root is a supported entry point. Files under `dist/`, such as
+`dist/db/locations.json` or `dist/lib/internal/`, are not part of the API and can change in any
+release.
+
+## Examples
+
+### Cascading address form
+
+Each list depends on the choice made in the one before it.
+
+```ts
 import { RwandaLocation } from '@devrw/rwanda-location';
 
 const rw = new RwandaLocation();
 
-// Step 1: User selects a province
+// 1. Show the provinces.
 const provinces = rw.getProvinces();
-// Show provinces in dropdown
+provinces.length; // 5
 
-// Step 2: When province is selected, load its districts
-const selectedProvinceCode = 1; // User selected KIGALI
-const districts = rw.getDistricts(selectedProvinceCode);
-// Show districts in next dropdown
+// 2. The user picks KIGALI (code 1). Show its districts.
+const districts = rw.getDistricts(1);
+districts.map((district) => district.name); // ['Nyarugenge', 'Gasabo', 'Kicukiro']
 
-// Step 3: When district is selected, load its sectors
-const selectedDistrictCode = 101; // User selected Nyarugenge
-const sectors = rw.getSectors(selectedDistrictCode);
-// Show sectors in next dropdown
+// 3. The user picks Nyarugenge (101). Show its sectors.
+const sectors = rw.getSectors(101);
+sectors.length; // 10
 
-// Step 4: When sector is selected, load its cells
-const selectedSectorCode = '010101'; // User selected Gitega
-const cells = rw.getCells(selectedSectorCode);
-// Show cells in next dropdown
+// 4. The user picks Gitega. Sector codes are 6-character strings.
+const cells = rw.getCells('010101');
+cells.map((cell) => cell.name); // ['Akabahizi', 'Akabeza', 'Gacyamo', 'Kigarama', 'Kinyange', 'Kora']
 
-// Step 5: When cell is selected, load its villages
-const selectedCellCode = 1010101; // User selected Akabahizi
-const villages = rw.getVillages(selectedCellCode);
-// Show villages in final dropdown
+// 5. The user picks Akabahizi (1010101). Show its villages.
+const villages = rw.getVillages(1010101);
+villages.length; // 12
 
-// Step 6: Get complete information
-const selectedVillageCode = 101010102;
-const fullInfo = rw.getVillageByCode(selectedVillageCode);
-console.log(fullInfo);
+// 6. The user picks Gihanga (101010102). Get the whole address.
+const address = rw.getVillageByCode(101010102);
+console.log(address);
 // {
 //   code: 101010102,
 //   name: 'Gihanga',
@@ -118,272 +151,464 @@ console.log(fullInfo);
 // }
 ```
 
-### 2. Searching for Locations
+### Checking stored codes
 
-Search across all administrative levels:
+A village code identifies the whole path, so one lookup checks that a stored address is
+consistent.
 
-```typescript
-// Search for locations containing "Kigali"
-const results = rw.search({ query: 'Kigali', limit: 10 });
+```ts
+import { rwandaLocation } from '@devrw/rwanda-location';
 
-results.forEach((location) => {
-  console.log(`${location.village_name}, ${location.sector_name}, ${location.district_name}`);
-});
-```
+interface AddressCodes {
+  provinceCode: number;
+  districtCode: number;
+  sectorCode: string;
+  cellCode: number;
+  villageCode: number;
+}
 
-### 3. Finding Specific Locations
+function isValidAddress(address: AddressCodes): boolean {
+  const village = rwandaLocation.getVillageByCode(address.villageCode);
+  return (
+    village !== null &&
+    village.cellCode === address.cellCode &&
+    village.sectorCode === address.sectorCode &&
+    village.districtCode === address.districtCode &&
+    village.provinceCode === address.provinceCode
+  );
+}
 
-```typescript
-// Find a province by name
-const province = rw.getProvinceByName('KIGALI');
-
-// Find a district by code
-const district = rw.getDistrictByCode(101);
-
-// Get all sectors in a district
-const sectors = rw.getSectors(101);
-
-// Get complete hierarchy for a village
-const village = rw.getVillageByCode(101010102);
-```
-
-### 4. Querying with Filters
-
-```typescript
-// Find all locations in a specific area
-const locations = rw.query({
+const stored = {
   provinceCode: 1,
   districtCode: 101,
-  sectorName: 'Gitega',
+  sectorCode: '010101',
+  cellCode: 1010101,
+  villageCode: 101010102,
+};
+isValidAddress(stored); // true
+isValidAddress({ ...stored, provinceCode: 2 }); // false
+isValidAddress({ ...stored, villageCode: 999999999 }); // false
+```
+
+### React
+
+A form with two dependent dropdowns. The district list is computed from the selected province on
+each render, which is cheap.
+
+```tsx
+import { useState } from 'react';
+import { rwandaLocation } from '@devrw/rwanda-location';
+
+const provinces = rwandaLocation.getProvinces();
+
+export function AddressForm() {
+  const [provinceCode, setProvinceCode] = useState<number | null>(null);
+  const [districtCode, setDistrictCode] = useState<number | null>(null);
+  const districts = provinceCode ? rwandaLocation.getDistricts(provinceCode) : [];
+
+  return (
+    <div>
+      <select
+        value={provinceCode ?? ''}
+        onChange={(event) => {
+          setProvinceCode(event.target.value ? Number(event.target.value) : null);
+          setDistrictCode(null);
+        }}
+      >
+        <option value="">Select a province</option>
+        {provinces.map((province) => (
+          <option key={province.code} value={province.code}>
+            {province.name}
+          </option>
+        ))}
+      </select>
+
+      {provinceCode !== null && (
+        <select
+          value={districtCode ?? ''}
+          onChange={(event) =>
+            setDistrictCode(event.target.value ? Number(event.target.value) : null)
+          }
+        >
+          <option value="">Select a district</option>
+          {districts.map((district) => (
+            <option key={district.code} value={district.code}>
+              {district.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+```
+
+### Express
+
+Check codes that come from a request before you use them as filters. `getDistricts(NaN)` and
+`getDistricts(0)` return all 30 districts (see [Behavior notes](#behavior-notes)).
+
+```js
+const express = require('express');
+const { rwandaLocation } = require('@devrw/rwanda-location');
+
+const app = express();
+
+app.get('/api/provinces', (req, res) => {
+  res.json(rwandaLocation.getProvinces());
 });
 
-// Query by names (case-insensitive)
-const byName = rw.query({ provinceName: 'kigali' });
-```
-
-## Complete API Reference
-
-### Province Methods
-
-#### `getProvinces()`
-
-Get all 5 provinces in Rwanda.
-
-```typescript
-const provinces = rw.getProvinces();
-// Returns: Province[]
-```
-
-#### `getProvinceByCode(code: number)`
-
-Get a specific province by its code (1-5).
-
-```typescript
-const kigali = rw.getProvinceByCode(1);
-// Returns: Province | null
-```
-
-#### `getProvinceByName(name: string)`
-
-Get a province by name (case-insensitive).
-
-```typescript
-const south = rw.getProvinceByName('south');
-// Returns: Province | null
-```
-
-### District Methods
-
-#### `getDistricts(provinceCode?: number)`
-
-Get all districts, or filter by province.
-
-```typescript
-// All districts
-const allDistricts = rw.getDistricts();
-
-// Districts in specific province
-const kigaliDistricts = rw.getDistricts(1);
-// Returns: District[]
-```
-
-#### `getDistrictByCode(code: number)`
-
-Get a specific district by its code.
-
-```typescript
-const nyarugenge = rw.getDistrictByCode(101);
-// Returns: District | null
-```
-
-### Sector Methods
-
-#### `getSectors(districtCode?: number, provinceCode?: number)`
-
-Get all sectors, or filter by district/province.
-
-```typescript
-// All sectors
-const allSectors = rw.getSectors();
-
-// Sectors in a district
-const districtSectors = rw.getSectors(101);
-
-// Sectors in a province
-const provinceSectors = rw.getSectors(undefined, 1);
-// Returns: Sector[]
-```
-
-#### `getSectorByCode(code: string)`
-
-Get a specific sector by its code.
-
-```typescript
-const sector = rw.getSectorByCode('010101');
-// Returns: Sector | null
-```
-
-### Cell Methods
-
-#### `getCells(sectorCode?: string, districtCode?: number, provinceCode?: number)`
-
-Get all cells, or filter by sector/district/province.
-
-```typescript
-// All cells
-const allCells = rw.getCells();
-
-// Cells in a sector
-const sectorCells = rw.getCells('010101');
-
-// Cells in a district
-const districtCells = rw.getCells(undefined, 101);
-// Returns: Cell[]
-```
-
-#### `getCellByCode(code: number)`
-
-Get a specific cell by its code.
-
-```typescript
-const cell = rw.getCellByCode(1010101);
-// Returns: Cell | null
-```
-
-### Village Methods
-
-#### `getVillages(cellCode?: number, sectorCode?: string, districtCode?: number, provinceCode?: number)`
-
-Get all villages, or filter by cell/sector/district/province.
-
-```typescript
-// All villages
-const allVillages = rw.getVillages();
-
-// Villages in a cell
-const cellVillages = rw.getVillages(1010101);
-
-// Villages in a sector
-const sectorVillages = rw.getVillages(undefined, '010101');
-// Returns: Village[]
-```
-
-#### `getVillageByCode(code: number)`
-
-Get a specific village with its complete hierarchy.
-
-```typescript
-const village = rw.getVillageByCode(101010102);
-// Returns: Village | null
-// Village includes: province, district, sector, cell, and village info
-```
-
-### Search & Query Methods
-
-#### `search(options: SearchOptions)`
-
-Search for locations by name across all levels.
-
-```typescript
-// Basic search
-const results = rw.search({ query: 'Kigali' });
-
-// Case-sensitive search
-const exactResults = rw.search({
-  query: 'KIGALI',
-  caseSensitive: true,
+app.get('/api/provinces/:code/districts', (req, res) => {
+  const code = Number(req.params.code);
+  if (!rwandaLocation.getProvinceByCode(code)) {
+    return res.status(404).json({ error: 'Unknown province code' });
+  }
+  return res.json(rwandaLocation.getDistricts(code));
 });
 
-// Limited results
-const topResults = rw.search({
-  query: 'gitega',
-  limit: 10,
-});
-// Returns: LocationData[]
+app.listen(3000);
 ```
 
-#### `query(filter: QueryFilter)`
+More examples are in the [examples](examples) folder.
 
-Query locations with multiple filters.
+## API reference
 
-```typescript
-const filtered = rw.query({
-  provinceCode: 1,
-  districtCode: 101,
-  sectorName: 'Gitega',
-});
-// Returns: LocationData[]
+The snippets from here on use an instance called `rw`:
+
+```ts
+import { RwandaLocation } from '@devrw/rwanda-location';
+
+const rw = new RwandaLocation(); // or use the shared instance, rwandaLocation
 ```
 
-### Utility Methods
+| Method                                                              | Returns                        |
+| ------------------------------------------------------------------- | ------------------------------ |
+| `getProvinces()`                                                    | `Province[]`                   |
+| `getProvinceByCode(code)`                                           | `Province \| null`             |
+| `getProvinceByName(name)`                                           | `Province \| null`             |
+| `getDistricts(provinceCode?)`                                       | `District[]`                   |
+| `getDistrictByCode(code)`                                           | `District \| null`             |
+| `getSectors(districtCode?, provinceCode?)`                          | `Sector[]`                     |
+| `getSectorByCode(code)`                                             | `Sector \| null`               |
+| `getCells(sectorCode?, districtCode?, provinceCode?)`               | `Cell[]`                       |
+| `getCellByCode(code)`                                               | `Cell \| null`                 |
+| `getVillages(cellCode?, sectorCode?, districtCode?, provinceCode?)` | `Village[]`                    |
+| `getVillageByCode(code)`                                            | `Village \| null`              |
+| `getHierarchy(villageCode)`                                         | `Village \| null`              |
+| `getFullPath(villageCode)`                                          | `FullPath`                     |
+| `getStatistics()`                                                   | `Statistics`                   |
+| `query(filter)`                                                     | `LocationData[]` (shared rows) |
+| `search(options)`                                                   | `LocationData[]` (shared rows) |
 
-#### `getStatistics()`
+Rules that apply to every method:
 
-Get counts of all administrative divisions.
+- Sector codes are 6-character strings such as `'010101'`. All other codes are numbers. Codes are
+  compared with `===`, so `'101'` does not match district `101`.
+- The list methods (`getProvinces()` to `getVillages()`) return new objects, sorted by code.
+  Filters are combined with AND. A falsy filter (`0`, `NaN`, `''`, `null`, `undefined`) means
+  "no filter".
+- The `ByCode` and `ByName` methods return a new object, or `null` when nothing matches.
+- `query()` and `search()` return the dataset rows themselves, in data-file order. Treat them as
+  read-only.
 
-```typescript
-const stats = rw.getStatistics();
-// Returns:
+### Provinces
+
+`getProvinces()` lists the 5 provinces, sorted by code. `getProvinceByCode(code)` takes a number
+from 1 to 5. `getProvinceByName(name)` ignores case but does not trim, and only knows the short
+names `KIGALI`, `SOUTH`, `WEST`, `NORTH` and `EAST`.
+
+```ts
+rw.getProvinceByCode(1); // { code: 1, name: 'KIGALI' }
+rw.getProvinceByCode(999); // null
+rw.getProvinceByName('south'); // { code: 2, name: 'SOUTH' }
+rw.getProvinceByName(' south'); // null
+rw.getProvinceByName('Southern Province'); // null
+```
+
+### Districts
+
+`getDistricts(provinceCode?)` lists all 30 districts, or those of one province.
+`getDistrictByCode(code)` takes a number such as `101`.
+
+```ts
+rw.getDistricts().length; // 30
+rw.getDistricts(2).length; // 8
+rw.getDistricts(9); // []
+rw.getDistrictByCode(101); // { code: 101, name: 'Nyarugenge', provinceCode: 1, provinceName: 'KIGALI' }
+```
+
+### Sectors
+
+`getSectors(districtCode?, provinceCode?)` lists all 416 sectors, or those that match every
+filter given. `getSectorByCode(code)` takes a 6-character string: the leading zero matters.
+
+```ts
+rw.getSectors().length; // 416
+rw.getSectors(101).length; // 10
+rw.getSectors(undefined, 1).length; // 35
+rw.getSectors(101, 2); // []
+rw.getSectorByCode('10101'); // null
+
+rw.getSectorByCode('010101');
+// {
+//   code: '010101',
+//   name: 'Gitega',
+//   districtCode: 101,
+//   districtName: 'Nyarugenge',
+//   provinceCode: 1,
+//   provinceName: 'KIGALI'
+// }
+```
+
+### Cells
+
+`getCells(sectorCode?, districtCode?, provinceCode?)` lists all 2,148 cells, or those that match
+every filter given. `getCellByCode(code)` takes a number such as `1010101`.
+
+```ts
+rw.getCells().length; // 2148
+rw.getCells('010101').map((cell) => cell.name); // ['Akabahizi', 'Akabeza', 'Gacyamo', 'Kigarama', 'Kinyange', 'Kora']
+rw.getCells(undefined, 101).length; // 47
+rw.getCellByCode(1010101)?.name; // 'Akabahizi'
+```
+
+### Villages
+
+`getVillages(cellCode?, sectorCode?, districtCode?, provinceCode?)` lists all 14,842 villages, or
+those that match every filter given. `getVillageByCode(code)` returns the village with the codes
+and names of its cell, sector, district and province. `getHierarchy(villageCode)` does the same.
+
+```ts
+rw.getVillages().length; // 14842
+rw.getVillages(1010101).length; // 12
+rw.getVillages(undefined, '010101').length; // 50
+rw.getVillages(1010101, '010102'); // []
+rw.getVillageByCode(101010102)?.cellName; // 'Akabahizi'
+rw.getHierarchy(101010102)?.sectorName; // 'Gitega'
+rw.getVillageByCode(999999999); // null
+```
+
+### Full path
+
+`getFullPath(villageCode)` splits a village into its province, district, sector, cell and village,
+for example to show breadcrumbs. For an unknown code, every member is `null`.
+
+```ts
+const path = rw.getFullPath(101010102);
+path.province; // { code: 1, name: 'KIGALI' }
+path.district?.name; // 'Nyarugenge'
+path.sector?.code; // '010101'
+path.cell?.name; // 'Akabahizi'
+path.village?.name; // 'Gihanga'
+
+rw.getFullPath(999999999); // { province: null, district: null, sector: null, cell: null, village: null }
+```
+
+### Statistics
+
+`getStatistics()` counts the divisions at each level.
+
+```ts
+rw.getStatistics();
 // {
 //   totalProvinces: 5,
 //   totalDistricts: 30,
 //   totalSectors: 416,
 //   totalCells: 2148,
-//   totalVillages: 14837
+//   totalVillages: 14842
 // }
 ```
 
-#### `getHierarchy(villageCode: number)`
+### query()
 
-Get complete hierarchy for a village (alias for `getVillageByCode`).
+`query(filter)` returns the dataset rows that match every filter given. Each row is a
+`LocationData` object: one village with the codes and names of all its levels, in snake_case.
 
-```typescript
-const hierarchy = rw.getHierarchy(101010102);
-// Returns: Village | null
-```
+- Code filters (`provinceCode`, `districtCode`, `sectorCode`, `cellCode`, `villageCode`) are
+  compared with `===`. `sectorCode` is a string; the others are numbers.
+- Name filters (`provinceName`, `districtName`, `sectorName`, `cellName`, `villageName`) must
+  equal the whole name. They ignore case but are not trimmed. Use `search()` to match part of a
+  name.
+- Falsy filter values and unknown keys are ignored, so `query({})` returns every row.
+- The rows come back in the order of the data file, which is not strictly sorted by code.
+- The rows are shared with the library and every other caller. Do not modify them; copy a row
+  first (`{ ...row }`) if you need to change it.
 
-#### `getFullPath(villageCode: number)`
+```ts
+rw.query({ provinceCode: 1 }).length; // 1176
+rw.query({ districtName: 'gasabo', sectorName: 'remera' }).length; // 26
+rw.query({ districtName: 'gas' }).length; // 0
+rw.query({ provinceCode: 1, districtCode: 201 }); // []
+rw.query({}).length; // 14842
 
-Get structured path for breadcrumb navigation.
-
-```typescript
-const path = rw.getFullPath(101010102);
-// Returns:
+const [row] = rw.query({ villageCode: 101010102 });
+console.log(row);
 // {
-//   province: { code: 1, name: 'KIGALI' },
-//   district: { code: 101, name: 'Nyarugenge', ... },
-//   sector: { code: '010101', name: 'Gitega', ... },
-//   cell: { code: 1010101, name: 'Akabahizi', ... },
-//   village: { code: 101010102, name: 'Gihanga', ... }
+//   id: 'fdf89758-99f0-4b6d-a793-e72f274c0fa1',
+//   country_code: 'RWA',
+//   country_name: 'RWANDA',
+//   province_code: 1,
+//   province_name: 'KIGALI',
+//   district_code: 101,
+//   district_name: 'Nyarugenge',
+//   sector_code: '010101',
+//   sector_name: 'Gitega',
+//   cell_code: 1010101,
+//   cell_name: 'Akabahizi',
+//   village_code: 101010102,
+//   village_name: 'Gihanga'
 // }
 ```
 
-## TypeScript Types
+### search()
 
-```typescript
+`search({ query, caseSensitive?, limit? })` returns the dataset rows (`LocationData`, one per
+village) where the province, district, sector, cell or village name contains `query`.
+
+- It is a plain substring match. It ignores case unless `caseSensitive` is `true`. The query is
+  not trimmed or split into words, and an empty query matches every row.
+- Codes and ids are not searched.
+- Results are in data-file order. They are not ranked, and not grouped by level: a term that
+  matches a province name returns every village of that province. For example, `'kigali'`
+  matches all 1,176 villages of the KIGALI province, plus 6 villages named Kigali in other
+  provinces.
+- `limit` keeps the first `limit` matches. `0`, `NaN`, `null`, `undefined` and negative numbers
+  mean no limit. A positive fraction is rounded down, so `2.5` keeps 2 rows. A limit between 0
+  and 1, such as `0.5`, returns no rows.
+- Since 1.2.0 a negative `limit` means no limit. 1.1.2 passed it to `Array#slice()`, so `-1`
+  dropped the last match and a limit between -1 and 0 returned no rows.
+- Like `query()`, it returns the shared rows: treat them as read-only.
+
+```ts
+const rows = rw.search({ query: 'kigali' });
+rows.length; // 1182
+rows.filter((row) => row.province_name !== 'KIGALI').length; // 6
+
+rw.search({ query: 'Kigali', caseSensitive: true }).length; // 54
+rw.search({ query: 'gitega' }).length; // 153
+rw.search({ query: 'gitega', limit: 10 }).length; // 10
+rw.search({ query: 'gitega', limit: -1 }).length; // 153
+rw.search({ query: '' }).length; // 14842
+rw.search({ query: '101' }); // []
+```
+
+To search a single level, filter the list of that level instead:
+
+```ts
+const term = 'gitega';
+rw.getSectors()
+  .filter((sector) => sector.name.toLowerCase().includes(term))
+  .map((sector) => sector.code); // ['010101']
+rw.getCells().filter((cell) => cell.name.toLowerCase().includes(term)).length; // 9
+```
+
+For villages, filter the rows that `search()` returns. That is faster than filtering
+`getVillages()`, which builds 14,842 new objects. `search({ query: 'gihanga' })` returns 67 rows:
+55 villages of the Nyagihanga sector, 5 villages of the Gihanga cell, and 7 villages whose own
+name contains "gihanga" (4 named Gihanga, plus Kagihanga, Gihangara and Nyagihanga):
+
+```ts
+const villageTerm = 'gihanga';
+rw.search({ query: villageTerm }).length; // 67
+const matches = rw
+  .search({ query: villageTerm })
+  .filter((row) => row.village_name.toLowerCase().includes(villageTerm));
+matches.length; // 7
+```
+
+## Utility functions
+
+The package also exports a few helper functions.
+
+| Function                       | What it does                                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `normalizeString(str)`         | Lowercases and trims a string.                                                                  |
+| `matchesString(a, b)`          | `true` if both strings are equal after `normalizeString`.                                       |
+| `getUniqueByKey(items, key)`   | The distinct values of `key`, in order of first appearance. Does not change `items`.            |
+| `sortByNumericKey(items, key)` | Sorts by a numeric key, ascending. **Sorts `items` in place** and returns the same array.       |
+| `sortByStringKey(items, key)`  | Sorts by a key compared as text with `localeCompare`. **Sorts `items` in place.**               |
+| `isValidProvinceCode(code)`    | `true` if `1 <= code <= 5`. A range check: `1.5` also passes.                                   |
+| `isValidDistrictCode(code)`    | `true` if `101 <= code <= 599`. A range check: codes that no district has, such as `150`, pass. |
+| `formatLocation(row)`          | Formats a `LocationData` row as `'village, cell, sector, district, province'`.                  |
+| `getParentLevel(level)`        | The level above: `'village'` gives `'cell'`, `'province'` gives `null`.                         |
+| `getChildLevel(level)`         | The level below: `'province'` gives `'district'`, `'village'` gives `null`.                     |
+
+```ts
+import {
+  formatLocation,
+  getChildLevel,
+  getParentLevel,
+  getUniqueByKey,
+  isValidDistrictCode,
+  matchesString,
+  normalizeString,
+  rwandaLocation,
+  sortByNumericKey,
+  sortByStringKey,
+} from '@devrw/rwanda-location';
+
+normalizeString('  KiGaLi  '); // 'kigali'
+matchesString(' KIGALI ', 'kigali'); // true
+
+const kigaliRows = rwandaLocation.query({ provinceCode: 1 });
+getUniqueByKey(kigaliRows, 'district_name'); // ['Nyarugenge', 'Gasabo', 'Kicukiro']
+
+// The sort helpers change the array you pass in. Sort a copy to keep the original.
+const items = [{ code: 3 }, { code: 1 }, { code: 2 }];
+const sorted = sortByNumericKey(items, 'code');
+sorted === items; // true
+items.map((item) => item.code); // [1, 2, 3]
+sortByStringKey([{ code: 9 }, { code: 10 }], 'code'); // [{ code: 10 }, { code: 9 }]
+
+// A range check is not an existence check.
+isValidDistrictCode(150); // true
+rwandaLocation.getDistrictByCode(150); // null
+
+formatLocation(kigaliRows[0]); // 'Gihanga, Akabahizi, Gitega, Nyarugenge, KIGALI'
+getParentLevel('village'); // 'cell'
+getChildLevel('village'); // null
+```
+
+Notes:
+
+- `normalizeString` and `matchesString` throw a `TypeError` for values that are not strings.
+- `formatLocation` reads the snake_case fields of a `LocationData` row, as returned by `query()`
+  and `search()`. It does not work with the `Village` objects returned by `getVillageByCode()`.
+- `getParentLevel` and `getChildLevel` return `undefined` for any other value, including other
+  casings such as `'Village'`. Since 1.2.0 this also holds for inherited object keys such as
+  `'__proto__'` and `'toString'`; 1.1.2 returned `Object.prototype` members for those.
+
+## Exports and types
+
+The package root exports:
+
+- `RwandaLocation`: the class.
+- `rwandaLocation`: a shared instance of the class.
+- `default`: the class again (see [Importing](#importing) for the Node.js ES module case).
+- The ten functions listed in [Utility functions](#utility-functions).
+- Types only: `LocationData`, `QueryFilter`, `SearchOptions`, `Statistics`, `FullPath`,
+  `Province`, `District`, `Sector`, `Cell` and `Village`.
+
+```ts
+interface LocationData {
+  id: string;
+  country_code: string;
+  country_name: string;
+  province_code: number;
+  province_name: string;
+  district_code: number;
+  district_name: string;
+  sector_code: string;
+  sector_name: string;
+  cell_code: number;
+  cell_name: string;
+  village_code: number;
+  village_name: string;
+}
+
 interface Province {
-  code: number; // 1-5
-  name: string; // 'KIGALI', 'SOUTH', 'WEST', 'NORTH', 'EAST'
+  code: number;
+  name: string;
 }
 
 interface District {
@@ -425,308 +650,227 @@ interface Village {
   provinceCode: number;
   provinceName: string;
 }
-```
 
-## Province Codes Reference
+interface QueryFilter {
+  provinceCode?: number;
+  provinceName?: string;
+  districtCode?: number;
+  districtName?: string;
+  sectorCode?: string;
+  sectorName?: string;
+  cellCode?: number;
+  cellName?: string;
+  villageCode?: number;
+  villageName?: string;
+}
 
-| Code | Province Name |
-| ---- | ------------- |
-| 1    | KIGALI        |
-| 2    | SOUTH         |
-| 3    | WEST          |
-| 4    | NORTH         |
-| 5    | EAST          |
+interface SearchOptions {
+  query: string;
+  caseSensitive?: boolean;
+  limit?: number;
+}
 
-## Administrative Structure
+interface Statistics {
+  totalProvinces: number;
+  totalDistricts: number;
+  totalSectors: number;
+  totalCells: number;
+  totalVillages: number;
+}
 
-Rwanda's administrative hierarchy:
-
-```
-Country (Rwanda)
-  └── Province (5)
-      └── District (30)
-          └── Sector (416)
-              └── Cell (2,148)
-                  └── Village (14,837)
-```
-
-## Real-World Examples
-
-### React Example - Address Form
-
-```typescript
-import React, { useState } from 'react';
-import { rwandaLocation } from '@devrw/rwanda-location';
-
-function AddressForm() {
-  const [selectedProvince, setSelectedProvince] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [districts, setDistricts] = useState([]);
-
-  const provinces = rwandaLocation.getProvinces();
-
-  const handleProvinceChange = (provinceCode) => {
-    setSelectedProvince(provinceCode);
-    setDistricts(rwandaLocation.getDistricts(parseInt(provinceCode)));
-    setSelectedDistrict('');
-  };
-
-  return (
-    <div>
-      <select onChange={(e) => handleProvinceChange(e.target.value)}>
-        <option value="">Select Province</option>
-        {provinces.map(p => (
-          <option key={p.code} value={p.code}>{p.name}</option>
-        ))}
-      </select>
-
-      {selectedProvince && (
-        <select onChange={(e) => setSelectedDistrict(e.target.value)}>
-          <option value="">Select District</option>
-          {districts.map(d => (
-            <option key={d.code} value={d.code}>{d.name}</option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
+interface FullPath {
+  province: Province | null;
+  district: District | null;
+  sector: Sector | null;
+  cell: Cell | null;
+  village: Village | null;
 }
 ```
 
-### Node.js Example - API Endpoint
+Code formats:
 
-```javascript
-const express = require('express');
-const { rwandaLocation } = require('@devrw/rwanda-location');
+| Level    | Type   | Example     | Format                                        |
+| -------- | ------ | ----------- | --------------------------------------------- |
+| Province | number | `1`         | 1 to 5                                        |
+| District | number | `101`       | province digit, then 2 digits                 |
+| Sector   | string | `'010101'`  | 6 characters with a leading zero              |
+| Cell     | number | `1010101`   | province digit, then 2 digits per lower level |
+| Village  | number | `101010102` | cell code, then 2 digits                      |
 
-const app = express();
+| Code | Province |
+| ---- | -------- |
+| 1    | KIGALI   |
+| 2    | SOUTH    |
+| 3    | WEST     |
+| 4    | NORTH    |
+| 5    | EAST     |
 
-app.get('/api/provinces', (req, res) => {
-  const provinces = rwandaLocation.getProvinces();
-  res.json(provinces);
-});
+## Behavior notes
 
-app.get('/api/districts/:provinceCode', (req, res) => {
-  const districts = rwandaLocation.getDistricts(parseInt(req.params.provinceCode));
-  res.json(districts);
-});
+These rules are the same as in 1.1.2, except where a note says otherwise, and they stay the same
+in 1.x.
 
-app.listen(3000);
-```
+**Codes are compared strictly.** Sector codes are strings such as `'010101'`; all other codes are
+numbers. In plain JavaScript, `getDistrictByCode('101')` and `getSectorByCode(10101)` return
+`null`. Convert codes that come from forms or URLs before you use them.
 
-### Validation Example
+**A falsy argument means "no filter".** `0`, `NaN`, `''`, `null` and `undefined` are ignored, so
+`getDistricts(0)` returns all 30 districts, not none. This matters for values from `parseInt` or
+`Number`, which give `NaN` for bad input. Check the value first:
 
-```typescript
-function validateAddress(data: { provinceCode: number; districtCode: number; sectorCode: string }) {
-  // Check province exists
-  const province = rw.getProvinceByCode(data.provinceCode);
-  if (!province) {
-    return { valid: false, error: 'Invalid province' };
-  }
+```ts
+rw.getDistricts(0).length; // 30
+rw.getDistricts(Number.parseInt('abc', 10)).length; // 30
 
-  // Check district exists and belongs to province
-  const district = rw.getDistrictByCode(data.districtCode);
-  if (!district || district.provinceCode !== data.provinceCode) {
-    return { valid: false, error: 'Invalid district for this province' };
-  }
-
-  // Check sector exists and belongs to district
-  const sector = rw.getSectorByCode(data.sectorCode);
-  if (!sector || sector.districtCode !== data.districtCode) {
-    return { valid: false, error: 'Invalid sector for this district' };
-  }
-
-  return { valid: true };
+function districtsOf(input: string) {
+  const code = Number(input);
+  return rw.getProvinceByCode(code) ? rw.getDistricts(code) : [];
 }
+districtsOf('1').length; // 3
+districtsOf('abc').length; // 0
+districtsOf('0').length; // 0
 ```
 
-## Troubleshooting
+**Filters are positional.** Passing a method directly as a callback, as in
+`codes.map(rw.getCells, rw)`, also passes the array index and the array as filters. Use an arrow
+function instead:
 
-### Common Issues
-
-**Q: Getting `null` or empty results?**
-
-A: Make sure you're using valid codes. Province codes are 1-5, district codes start from 101, etc.
-
-```typescript
-// ❌ Wrong
-const districts = rw.getDistricts(999); // Returns []
-
-// ✅ Correct
-const districts = rw.getDistricts(1); // Returns Kigali districts
+```ts
+const sectorCodes = ['010101', '010102'];
+sectorCodes.map((code) => rw.getCells(code).length); // [6, 3]
 ```
 
-**Q: TypeScript errors?**
+**Name matching ignores case but does not trim.** `'kigali'` matches `KIGALI`, but `' kigali'`
+matches nothing. This applies to `getProvinceByName()` and to the name filters of `query()`.
+`search()` does not trim its query either. Trim user input yourself, for example with
+`normalizeString()`.
 
-A: Ensure you have TypeScript installed and configured:
+**Rows from `query()` and `search()` are shared and read-only.** Both return the dataset rows
+themselves, so a change to one row is seen by every caller and every instance. Since 1.2.0,
+lookups by code or name may also keep using the old value after such a change, because the
+lookup tables are built once. The same applies to the dataset array itself, which a deep import
+of `dist/db/locations.json` returns: sort or filter a copy (`[...rows].sort(...)`), never the
+array. The `get*` methods return new objects on each call, which you are free to change.
 
-```bash
-npm install --save-dev typescript @types/node
+```ts
+const [first] = rw.query({ villageCode: 101010102 });
+first === rw.search({ query: 'Gihanga' })[0]; // true
+const copy = { ...first }; // change the copy, not the shared row
 ```
 
-**Q: Import errors?**
+## Data
 
-A: Use the correct import syntax:
+| Level     | Count  |
+| --------- | ------ |
+| Provinces | 5      |
+| Districts | 30     |
+| Sectors   | 416    |
+| Cells     | 2,148  |
+| Villages  | 14,842 |
 
-```typescript
-// ES6
-import { rwandaLocation, RwandaLocation } from '@devrw/rwanda-location';
+The dataset has one row per village. It was added to the repository in October 2019 and has not
+changed since. The repository does not record its original source or the date it describes.
 
-// CommonJS
-const { rwandaLocation } = require('@devrw/rwanda-location');
-```
+**14,842 villages, not 14,837.** Commonly cited official figures give 14,837 villages. The
+dataset has five more village codes, all in the Eastern Province. They are kept in 1.x so that
+codes you have already stored keep resolving.
 
-### Best Practices
+| Village code | Village     | Cell       | Sector    | District  |
+| ------------ | ----------- | ---------- | --------- | --------- |
+| 502030506    | NyamiramaIi | Musenyi    | KARANGAZI | Nyagatare |
+| 503020104    | HanikaIi    | Gatsibo    | Gatsibo   | Gatsibo   |
+| 503050109    | NyarubuyeIi | Busetsa    | Kageyo    | Gatsibo   |
+| 503120607    | Rugarama    | Rwarenga   | Remera    | Gatsibo   |
+| 505120301    | Akirondo    | Nyarutunga | Nyarubuye | Kirehe    |
 
-1. **Reuse instances** - Create one instance and reuse it:
+**Province names.** Provinces are named `KIGALI`, `SOUTH`, `WEST`, `NORTH` and `EAST`. Other
+names, such as `'City of Kigali'` or `'Southern Province'`, do not match in
+`getProvinceByName()` or `query()`.
 
-```typescript
-// ✅ Good
-import { rwandaLocation } from '@devrw/rwanda-location';
-const provinces = rwandaLocation.getProvinces();
+**Known data issues.** Some names are stored with mistakes:
 
-// ❌ Less efficient
-import { RwandaLocation } from '@devrw/rwanda-location';
-const rw1 = new RwandaLocation();
-const rw2 = new RwandaLocation();
-```
+- 44 sector names are in capitals, all in the Ngororero, Rulindo and Nyagatare districts, for
+  example `BWIRA` (`030501`). The capitals also appear in the `sectorName` of their cells and
+  villages.
+- Sector `050712` is spelled `Ririma`. The official spelling is Rilima.
+- 457 names (18 cells and 439 villages) have lost a space between words, for example
+  `MunaniraIi` for "Munanira II" and `NyamataYUmujyi` for "Nyamata y'Umujyi". So
+  `search({ query: 'munanira i' })` finds nothing, while `search({ query: 'munanirai' })` finds
+  13 rows.
+- Village `306010101` is stored as `Cit` followed by two U+FFFD replacement characters, probably
+  a damaged "Cité".
+- Other typos: `Kiv0mo` (`401140104`, with a zero), `Gitwa.` (`403130402`), `AKagarama`
+  (`102110105`), `AmaremboIl` (`102130102`, with a lowercase L), `KrenziIi` (`205110203`) and
+  `Kinkrware` (`403110105`).
 
-2. **Check for null** - Always validate results:
-
-```typescript
-const province = rw.getProvinceByCode(userInput);
-if (!province) {
-  console.error('Province not found');
-  return;
-}
-// Use province safely
-```
-
-3. **Use TypeScript** - Get full type safety:
-
-```typescript
-import { RwandaLocation, Province } from '@devrw/rwanda-location';
-const rw = new RwandaLocation();
-const provinces: Province[] = rw.getProvinces();
-```
+These names are kept as they are in 1.x, because you may have stored them or filter by them.
+Changing them would change results for existing code. To report a wrong or missing name or code,
+use the
+[data correction form](https://github.com/DevRW/rwanda-location/issues/new?template=data-correction.yml)
+and include an official source.
 
 ## Performance
 
-The library is optimized for speed:
+Since 1.2.0, every method answers from lookup tables. The tables are built the first time a
+method needs them and are shared by all instances, including `rwandaLocation`. Creating an
+instance does no work. In 1.1.2, every call went through the dataset again: the list methods,
+`getStatistics()`, `query()` and `search()` read all 14,842 rows, and the lookups by code or name
+read rows up to the first match, or all of them for a code that does not exist.
 
-| Operation           | Time    | Records  |
-| ------------------- | ------- | -------- |
-| Get all provinces   | < 1ms   | 5        |
-| Get all districts   | < 5ms   | 30       |
-| Get all sectors     | < 20ms  | 416      |
-| Get all cells       | < 50ms  | 2,148    |
-| Get all villages    | < 100ms | 14,837   |
-| Search (with limit) | < 10ms  | Variable |
+Median time per call after warm-up, measured with `npm run bench` on an Apple M4 with Node.js 24:
 
-- ⚡ Zero dependencies - Fast installation
-- 📦 Lightweight - ~7MB (mostly location data)
-- 🚀 Efficient - Uses Maps for O(1) lookups
-- 💾 Memory efficient - Data loaded once
+| Operation                                                               | 1.1.2    | 1.2.0    |
+| ----------------------------------------------------------------------- | -------- | -------- |
+| Cascading form: provinces, districts, sectors, cells, villages, village | 437.5 µs | 1.27 µs  |
+| Check 1,000 village codes with `getVillageByCode()`                     | 5.33 ms  | 35.7 µs  |
+| `getVillageByCode(code)`                                                | 5.76 µs  | 0.04 µs  |
+| `getStatistics()`                                                       | 1.50 ms  | 0.08 µs  |
+| `search({ query: 'gitega', limit: 10 })`                                | 1.20 ms  | 0.36 µs  |
+| `search({ query: 'kigali' })`, 1,182 rows                               | 1.15 ms  | 280.9 µs |
+| `query({ villageName })`                                                | 717.5 µs | 41.5 µs  |
+
+Timings vary by up to about 2x between runs on the same machine. `search()` without a limit
+still checks every row.
+
+Costs to be aware of:
+
+- The first call that needs a table builds it. In the same benchmark, the first call of
+  `getVillageByCode()`, `getVillages()` or `search()` in a fresh process took about 1.5 to 6.5
+  ms, against 0.2 to 4 ms in 1.1.2. The first `getStatistics()` call is faster than in 1.1.2.
+  Later calls use the tables.
+- The tables use extra memory: about 1.2 MB for typical use (a cascading form and lookups by
+  code) and about 2.8 MB when every table is built. The dataset itself takes about 6 MB of
+  memory, and loading the package takes about 15 ms.
+
+## Package size
+
+The whole dataset is part of the package, so it is not small:
+
+- npm package: about 0.54 MB to download and 4.9 MB unpacked, of which 4.7 MB is the dataset.
+- Browser bundles include the whole dataset, even if you only import a helper function. A bundle
+  that calls `getProvinces()`, built with esbuild 0.25 (`--bundle --minify --platform=browser`),
+  is 4.35 MB minified and about 0.5 MB with gzip.
+
+For web pages, consider calling the library on a server and sending only the lists you need.
 
 ## Security
 
-This package is secure and production-ready:
-
-- ✅ **Zero vulnerabilities** - Regularly audited with `npm audit`
-- ✅ **Zero runtime dependencies** - No third-party code
-- ✅ **No code execution** - Pure data access only
-- ✅ **Type-safe** - TypeScript strict mode
-- ✅ **Well tested** - 98%+ code coverage
-
-**Security Contact**: info@jnkindilogs.xyz
-
-## Browser Support
-
-Works in all modern browsers and Node.js:
-
-- ✅ Node.js >= 14.0.0
-- ✅ Chrome, Firefox, Safari, Edge (latest versions)
-- ✅ React, Vue, Angular applications
-- ✅ Next.js, Nuxt.js applications
+The package has no runtime dependencies and makes no network requests. See
+[SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Contributing
 
-We welcome contributions! Here's how:
+Bug reports, data corrections and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the checks a change must pass and
+the compatibility rules. The [CHANGELOG](CHANGELOG.md) lists the changes in each version.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`npm test`)
-5. Commit (`git commit -m 'Add amazing feature'`)
-6. Push (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## Testing
-
-```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Build the project
-npm run build
-
-# Lint code
-npm run lint
-```
-
-## Changelog
-
-### 1.1.2 (Latest)
-
-- 📄 License: Updated Read me to capture license change
-- 📦 Package: Updated package metadata
-
-### 1.1.1
-
-- 📄 License: Changed from Apache-2.0 to MIT license for better compatibility
-- 📦 Package: Updated package metadata
-
-### 1.1.0
-
-- 🔒 Security: Fixed all vulnerabilities (0 vulnerabilities)
-- ✅ Testing: Enhanced test coverage to 98%+
-- 📚 Documentation: Comprehensive documentation
-- 🔧 Improvements: Better TypeScript types
-- 🎯 Performance: Optimized query performance
-- 📦 Package: Improved package structure
-
-### 1.0.0
-
-- 🎉 Initial release
-- ✨ Complete Rwanda location data
-- 📖 Basic documentation
-
-## Support
-
-Need help? We're here for you:
-
-- 📧 Email: info@jnkindilogs.xyz
-- 🐛 Issues: [GitHub Issues](https://github.com/DevRW/rwanda-location/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/DevRW/rwanda-location/discussions)
+Questions and bug reports: [GitHub Issues](https://github.com/DevRW/rwanda-location/issues).
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+MIT. See [LICENSE](LICENSE).
 
 ## Authors
 
-- Jacques Nyilinkindi - [info@jnkindilogs.xyz](mailto:info@jnkindilogs.xyz)
-- Theo Okafor - [theo.okafor@yahoo.com](mailto:theo.okafor@yahoo.com)
-
-## Acknowledgments
-
-Thanks to everyone who contributed to this project and to the Rwanda government for the official administrative data.
-
----
-
-**Made with ❤️ for Rwanda** 🇷🇼
-
-Star us on [GitHub](https://github.com/DevRW/rwanda-location) if you find this useful!
+- Jacques Nyilinkindi ([info@jnkindilogs.xyz](mailto:info@jnkindilogs.xyz))
+- Theo Okafor ([theo.okafor@yahoo.com](mailto:theo.okafor@yahoo.com))
